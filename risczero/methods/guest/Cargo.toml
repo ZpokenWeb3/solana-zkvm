@@ -1,0 +1,28 @@
+[package]
+name = "custom_method"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+
+[workspace]
+
+[dependencies]
+risc0-zkvm = { version = "1.0.3", default-features = false, features = ["getrandom", "std"] }
+getrandom = { version = "0.1.16", features = ["dummy"] }
+
+solana-sdk = {path = "../../../solana/sdk", version = "=2.0.3"}
+solana-program = {path = "../../../solana/sdk/program", version = "=2.0.3"}
+
+
+
+#[patch.crates-io.solana-sdk]
+#git = "https://github.com/staaason/agave.git"
+#rev = "87554de15dbc23fb625fecc62d07710097c8c5e3"
+#
+[patch.crates-io.curve25519-dalek]
+git = "https://github.com/anza-xyz/curve25519-dalek.git"
+rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
+
+[patch.crates-io.ed25519-dalek]
+git = "https://github.com/staaason/ed25519-dalek.git"
+rev = "91938d89eb5ca4a141d6fda1d1db11aebadc4388"

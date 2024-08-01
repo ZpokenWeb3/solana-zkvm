@@ -1,0 +1,44 @@
+[package]
+name = "solana-bpf-loader-program"
+description = "Solana BPF loader"
+documentation = "https://docs.rs/solana-bpf-loader-program"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+bincode = { workspace = true }
+byteorder = { workspace = true }
+libsecp256k1 = { workspace = true }
+log = { workspace = true }
+scopeguard = { workspace = true }
+solana-compute-budget = { workspace = true }
+solana-curve25519 = { workspace = true }
+solana-measure = { workspace = true }
+solana-poseidon = { workspace = true }
+solana-program-runtime = { workspace = true }
+solana-sdk = { workspace = true }
+solana-type-overrides = { workspace = true }
+solana_rbpf = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+memoffset = { workspace = true }
+rand = { workspace = true }
+solana-sdk = { workspace = true, features = ["dev-context-only-utils"] }
+solana-vote = { workspace = true }
+test-case = { workspace = true }
+
+[lib]
+crate-type = ["lib"]
+name = "solana_bpf_loader_program"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[features]
+shuttle-test = ["solana-type-overrides/shuttle-test", "solana-program-runtime/shuttle-test"]

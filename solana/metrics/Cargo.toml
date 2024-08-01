@@ -1,0 +1,33 @@
+[package]
+name = "solana-metrics"
+description = "Solana Metrics"
+documentation = "https://docs.rs/solana-metrics"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+crossbeam-channel = { workspace = true }
+gethostname = { workspace = true }
+lazy_static = { workspace = true }
+log = { workspace = true }
+reqwest = { workspace = true, features = ["brotli", "deflate", "gzip", "json", "blocking"] }
+solana-sdk = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+env_logger = { workspace = true }
+rand = { workspace = true }
+serial_test = { workspace = true }
+
+[lib]
+name = "solana_metrics"
+
+[[bench]]
+name = "metrics"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

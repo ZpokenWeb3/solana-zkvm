@@ -1,0 +1,20 @@
+farf/
+target/
+
+**/*.rs.bk
+.cargo
+
+/config/
+
+.cache
+
+# log files
+*.log
+log-*.txt
+log-*/
+!log-analyzer/*
+
+# intellij files
+.idea/
+/solana.iml
+/.vscode/

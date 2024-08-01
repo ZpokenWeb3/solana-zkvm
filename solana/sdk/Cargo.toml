@@ -1,0 +1,114 @@
+[package]
+name = "solana-sdk"
+description = "Solana SDK"
+documentation = "https://docs.rs/solana-sdk"
+readme = "README.md"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[features]
+# "program" feature is a legacy feature retained to support v1.3 and older
+# programs.  New development should not use this feature.  Instead use the
+# solana-program crate
+program = []
+
+default = [
+  "borsh",
+  "full" # functionality that is not compatible or needed for on-chain programs
+]
+full = [
+    "byteorder",
+    "chrono",
+    "generic-array",
+    "memmap2",
+    "rand",
+    "rand0-7",
+    "serde_json",
+    "ed25519-dalek",
+    "ed25519-dalek-bip32",
+    "libsecp256k1",
+    "sha3",
+    "digest",
+]
+borsh = ["dep:borsh", "solana-program/borsh"]
+dev-context-only-utils = [
+  "qualifier_attr"
+]
+frozen-abi = [
+  "dep:solana-frozen-abi",
+  "dep:solana-frozen-abi-macro",
+  "solana-program/frozen-abi",
+]
+
+[dependencies]
+bincode = { workspace = true }
+bitflags = { workspace = true, features = ["serde"] }
+borsh = { workspace = true, optional = true }
+bs58 = { workspace = true }
+bytemuck = { workspace = true }
+bytemuck_derive = { workspace = true }
+byteorder = { workspace = true, optional = true }
+chrono = { workspace = true, features = ["alloc"], optional = true }
+curve25519-dalek = { workspace = true, optional = true }
+derivation-path = { workspace = true }
+digest = { workspace = true, optional = true }
+ed25519-dalek = { workspace = true, optional = true }
+ed25519-dalek-bip32 = { workspace = true, optional = true }
+generic-array = { workspace = true, features = ["serde", "more_lengths"], optional = true }
+hmac = { workspace = true }
+itertools =  { workspace = true }
+lazy_static = { workspace = true }
+libsecp256k1 = { workspace = true, optional = true, features = ["hmac"] }
+log = { workspace = true }
+memmap2 = { workspace = true, optional = true }
+num_enum = { workspace = true }
+pbkdf2 = { workspace = true }
+qstring = { workspace = true }
+qualifier_attr = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+rand0-7 = { package = "rand", version = "0.7", optional = true }
+rand_core = "0.6.4"
+rustversion = { workspace = true }
+serde = { workspace = true }
+serde_bytes = { workspace = true }
+serde_derive = { workspace = true }
+serde_json = { workspace = true, optional = true }
+serde_with = { workspace = true, features = ["macros"] }
+sha2 = { workspace = true }
+sha3 = { workspace = true, optional = true }
+siphasher = { workspace = true }
+solana-frozen-abi = { workspace = true, optional = true }
+solana-frozen-abi-macro = { workspace = true, optional = true }
+solana-program = { workspace = true }
+solana-sdk-macro = { workspace = true }
+thiserror = { workspace = true }
+uriparse = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.1", features = ["wasm-bindgen"] }
+js-sys = { workspace = true }
+wasm-bindgen = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+assert_matches = { workspace = true }
+curve25519-dalek = { workspace = true }
+hex = { workspace = true }
+solana-logger = { workspace = true }
+solana-program = { workspace = true, features = ["dev-context-only-utils"] }
+solana-sdk = { path = "", features = ["dev-context-only-utils"] }
+static_assertions = { workspace = true }
+tiny-bip39 = { workspace = true }
+
+[build-dependencies]
+rustc_version = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
