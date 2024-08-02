@@ -10,7 +10,6 @@ members = [
     "frozen-abi",
     "frozen-abi/macro",
     "logger",
-    "measure",
     "program-runtime",
     "programs/address-lookup-table",
     "programs/bpf_loader",
@@ -232,7 +231,6 @@ solana-frozen-abi = { path = "frozen-abi", version = "=2.0.3" }
 solana-frozen-abi-macro = { path = "frozen-abi/macro", version = "=2.0.3" }
 solana-loader-v4-program = { path = "programs/loader-v4", version = "=2.0.3" }
 solana-logger = { path = "logger", version = "=2.0.3" }
-solana-measure = { path = "measure", version = "=2.0.3" }
 solana-metrics = { path = "metrics", version = "=2.0.3"}
 solana-nohash-hasher = "0.2.1"
 solana-package-metadata-macro = { path = "sdk/package-metadata-macro", version = "=2.0.3" }

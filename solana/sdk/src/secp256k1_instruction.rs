@@ -202,7 +202,7 @@
 //!
 //! # Examples
 //!
-//! Both of the following examples make use of the following module definition
+//! Both of the following example-programs make use of the following module definition
 //! to parse the secp256k1 instruction data from within a Solana program.
 //!
 //! ```no_run
@@ -464,7 +464,7 @@
 //!
 //! ## Example: Verifying multiple signatures in one instruction
 //!
-//! This examples demonstrates manually creating a secp256k1 instruction
+//! This example-programs demonstrates manually creating a secp256k1 instruction
 //! containing many signatures, and a Solana program that parses them all. This
 //! example on its own has no practical purpose. It simply demonstrates advanced
 //! use of the secp256k1 program.
@@ -831,7 +831,7 @@ pub struct SecpSignatureOffsets {
 ///
 /// This function is suitable for simple uses of the secp256k1 program.
 /// More complex uses must encode the secp256k1 instruction data manually.
-/// See the [module documentation][md] for examples.
+/// See the [module documentation][md] for example-programs.
 ///
 /// [md]: self
 ///

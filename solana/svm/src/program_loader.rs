@@ -31,7 +31,6 @@ pub(crate) enum ProgramAccountLoadResult {
 }
 
 pub(crate) fn load_program_from_bytes(
-    load_program_metrics: &mut LoadProgramMetrics,
     programdata: &[u8],
     loader_key: &Pubkey,
     account_size: usize,
@@ -49,7 +48,6 @@ pub(crate) fn load_program_from_bytes(
                 deployment_slot.saturating_add(DELAY_VISIBILITY_SLOT_OFFSET),
                 programdata,
                 account_size,
-                load_program_metrics,
             )
         }
     } else {
@@ -60,7 +58,6 @@ pub(crate) fn load_program_from_bytes(
             deployment_slot.saturating_add(DELAY_VISIBILITY_SLOT_OFFSET),
             programdata,
             account_size,
-            load_program_metrics,
         )
     }
 }
@@ -139,7 +136,6 @@ pub fn load_program_with_pubkey<CB: TransactionProcessingCallback>(
         ),
 
         ProgramAccountLoadResult::ProgramOfLoaderV1(program_account) => load_program_from_bytes(
-            &mut load_program_metrics,
             program_account.data(),
             program_account.owner(),
             program_account.data().len(),
@@ -150,7 +146,6 @@ pub fn load_program_with_pubkey<CB: TransactionProcessingCallback>(
         .map_err(|_| (0, ProgramCacheEntryOwner::LoaderV1)),
 
         ProgramAccountLoadResult::ProgramOfLoaderV2(program_account) => load_program_from_bytes(
-            &mut load_program_metrics,
             program_account.data(),
             program_account.owner(),
             program_account.data().len(),
@@ -167,7 +162,6 @@ pub fn load_program_with_pubkey<CB: TransactionProcessingCallback>(
                 .ok_or(Box::new(InstructionError::InvalidAccountData).into())
                 .and_then(|programdata| {
                     load_program_from_bytes(
-                        &mut load_program_metrics,
                         programdata,
                         program_account.owner(),
                         program_account
@@ -188,7 +182,6 @@ pub fn load_program_with_pubkey<CB: TransactionProcessingCallback>(
             .ok_or(Box::new(InstructionError::InvalidAccountData).into())
             .and_then(|elf_bytes| {
                 load_program_from_bytes(
-                    &mut load_program_metrics,
                     elf_bytes,
                     &loader_v4::id(),
                     program_account.data().len(),
@@ -495,7 +488,6 @@ mod tests {
         let environment = ProgramRuntimeEnvironment::new(BuiltinProgram::new_mock());
 
         let result = load_program_from_bytes(
-            &mut metrics,
             &buffer,
             &loader,
             size,
@@ -507,7 +499,6 @@ mod tests {
         assert!(result.is_ok());
 
         let result = load_program_from_bytes(
-            &mut metrics,
             &buffer,
             &loader,
             size,
@@ -618,7 +609,6 @@ mod tests {
 
         let environments = ProgramRuntimeEnvironments::default();
         let expected = load_program_from_bytes(
-            &mut LoadProgramMetrics::default(),
             account_data.data(),
             account_data.owner(),
             account_data.data().len(),
@@ -712,7 +702,6 @@ mod tests {
 
         let environments = ProgramRuntimeEnvironments::default();
         let expected = load_program_from_bytes(
-            &mut LoadProgramMetrics::default(),
             account_data.data(),
             account_data.owner(),
             account_data.data().len(),
@@ -797,7 +786,6 @@ mod tests {
 
         let environments = ProgramRuntimeEnvironments::default();
         let expected = load_program_from_bytes(
-            &mut LoadProgramMetrics::default(),
             account_data.data(),
             account_data.owner(),
             account_data.data().len(),

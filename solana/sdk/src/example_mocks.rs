@@ -1,13 +1,13 @@
-//! Mock types for use in examples.
+//! Mock types for use in example-programs.
 //!
 //! These represent APIs from crates that themselves depend on this crate, and
-//! which are useful for illustrating the examples for APIs in this crate.
+//! which are useful for illustrating the example-programs for APIs in this crate.
 //!
 //! Directly depending on these crates though would cause problematic circular
 //! dependencies, so instead they are mocked out here in a way that allows
-//! examples to appear to use crates that this crate must not depend on.
+//! example-programs to appear to use crates that this crate must not depend on.
 //!
-//! Each mod here has the name of a crate, so that examples can be structured to
+//! Each mod here has the name of a crate, so that example-programs can be structured to
 //! appear to import from that crate.
 
 #![doc(hidden)]

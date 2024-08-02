@@ -5,7 +5,6 @@ use {
     },
     log::{debug, error, log_enabled, trace},
     percentage::PercentageInteger,
-    solana_measure::measure::Measure,
     solana_rbpf::{
         elf::Executable,
         program::{BuiltinProgram, FunctionRegistry},
@@ -331,7 +330,6 @@ impl ProgramCacheEntry {
         effective_slot: Slot,
         elf_bytes: &[u8],
         account_size: usize,
-        metrics: &mut LoadProgramMetrics,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         Self::new_internal(
             loader_key,
@@ -340,7 +338,6 @@ impl ProgramCacheEntry {
             effective_slot,
             elf_bytes,
             account_size,
-            metrics,
             false, /* reloading */
         )
     }
@@ -360,7 +357,6 @@ impl ProgramCacheEntry {
         effective_slot: Slot,
         elf_bytes: &[u8],
         account_size: usize,
-        metrics: &mut LoadProgramMetrics,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         Self::new_internal(
             loader_key,
@@ -369,7 +365,6 @@ impl ProgramCacheEntry {
             effective_slot,
             elf_bytes,
             account_size,
-            metrics,
             true, /* reloading */
         )
     }
@@ -381,20 +376,15 @@ impl ProgramCacheEntry {
         effective_slot: Slot,
         elf_bytes: &[u8],
         account_size: usize,
-        metrics: &mut LoadProgramMetrics,
         reloading: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let load_elf_time = Measure::start("load_elf_time");
         // The following unused_mut exception is needed for architectures that do not
         // support JIT compilation.
         #[allow(unused_mut)]
         let mut executable = Executable::load(elf_bytes, program_runtime_environment.clone())?;
-        metrics.load_elf_us = load_elf_time.end_as_us();
 
         if !reloading {
-            let verify_code_time = Measure::start("verify_code_time");
             executable.verify::<RequisiteVerifier>()?;
-            metrics.verify_code_us = verify_code_time.end_as_us();
         }
 
         #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]

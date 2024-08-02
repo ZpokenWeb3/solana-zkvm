@@ -10,8 +10,11 @@ resolver = "2"
 risc0-zkvm = { version = "1.0.3", default-features = false, features = ["getrandom", "std"] }
 getrandom = { version = "0.1.16", features = ["dummy"] }
 
-solana-sdk = {path = "../../../solana/sdk", version = "=2.0.3"}
-solana-program = {path = "../../../solana/sdk/program", version = "=2.0.3"}
+solana-sdk = { path = "../../../solana/sdk", version = "=2.0.3" }
+solana-program = { path = "../../../solana/sdk/program", version = "=2.0.3" }
+svm-core = { path = "../core" }
+solana-svm = { path = "../../../solana/svm", version = "=2.0.3"}
+log = "0.4.22"
 
 
 
@@ -26,3 +29,7 @@ rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
 [patch.crates-io.ed25519-dalek]
 git = "https://github.com/staaason/ed25519-dalek.git"
 rev = "91938d89eb5ca4a141d6fda1d1db11aebadc4388"
+
+[patch.crates-io.reqwest]
+git = "https://github.com/staaason/reqwest.git"
+rev = "18961dfb1feb45b7434469e185bb0cada6f56482"

@@ -2,7 +2,6 @@ use {
     super::*,
     crate::serialization::account_data_region_memory_state,
     scopeguard::defer,
-    solana_measure::measure::Measure,
     solana_program_runtime::invoke_context::SerializedAccountMetadata,
     solana_rbpf::{
         ebpf,
@@ -1072,10 +1071,6 @@ fn cpi_common<S: SyscallInvokeSigned>(
         invoke_context,
         invoke_context.get_compute_budget().invoke_units,
     )?;
-    if let Some(execute_time) = invoke_context.execute_time.as_mut() {
-        execute_time.stop();
-        saturating_add_assign!(invoke_context.timings.execute_us, execute_time.as_us());
-    }
 
     let instruction = S::translate_instruction(instruction_addr, memory_mapping, invoke_context)?;
     let transaction_context = &invoke_context.transaction_context;
@@ -1113,7 +1108,6 @@ fn cpi_common<S: SyscallInvokeSigned>(
         &instruction_accounts,
         &program_indices,
         &mut compute_units_consumed,
-        &mut ExecuteTimings::default(),
     )?;
 
     // re-bind to please the borrow checker
@@ -1161,7 +1155,6 @@ fn cpi_common<S: SyscallInvokeSigned>(
         }
     }
 
-    invoke_context.execute_time = Some(Measure::start("execute"));
     Ok(SUCCESS)
 }
 

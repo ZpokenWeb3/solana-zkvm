@@ -7,7 +7,7 @@ use {
     },
     itertools::Itertools,
     solana_compute_budget::compute_budget_processor::{
-        process_compute_budget_instructions, ComputeBudgetLimits,
+        ComputeBudgetLimits, process_compute_budget_instructions,
     },
     solana_program_runtime::loaded_programs::{ProgramCacheEntry, ProgramCacheForTxBatch},
     solana_sdk::{
@@ -19,7 +19,7 @@ use {
         nonce::State as NonceState,
         pubkey::Pubkey,
         rent::RentDue,
-        rent_collector::{CollectedInfo, RentCollector, RENT_EXEMPT_RENT_EPOCH},
+        rent_collector::{CollectedInfo, RENT_EXEMPT_RENT_EPOCH, RentCollector},
         rent_debits::RentDebits,
         saturating_add_assign,
         sysvar::{self, instructions::construct_instructions_data},
@@ -83,10 +83,10 @@ pub fn collect_rent_from_account(
         // `rent_epoch` to u64::MAX. In such case, the behavior stays the same as before.
         if account.rent_epoch() != RENT_EXEMPT_RENT_EPOCH
             && rent_collector.get_rent_due(
-                account.lamports(),
-                account.data().len(),
-                account.rent_epoch(),
-            ) == RentDue::Exempt
+            account.lamports(),
+            account.data().len(),
+            account.rent_epoch(),
+        ) == RentDue::Exempt
         {
             account.set_rent_epoch(RENT_EXEMPT_RENT_EPOCH);
         }
@@ -258,7 +258,7 @@ fn load_transaction_accounts<CB: TransactionProcessingCallback>(
                                     key,
                                     &mut account,
                                 )
-                                .rent_amount;
+                                    .rent_amount;
 
                                 (account.data().len(), account, rent_due)
                             } else {
@@ -385,10 +385,10 @@ fn get_requested_loaded_accounts_data_size_limit(
     NonZeroUsize::new(
         usize::try_from(compute_budget_limits.loaded_accounts_bytes).unwrap_or_default(),
     )
-    .map_or(
-        Err(TransactionError::InvalidLoadedAccountsDataSizeLimit),
-        |v| Ok(Some(v)),
-    )
+        .map_or(
+            Err(TransactionError::InvalidLoadedAccountsDataSizeLimit),
+            |v| Ok(Some(v)),
+        )
 }
 
 fn account_shared_data_from_program(loaded_program: &ProgramCacheEntry) -> AccountSharedData {
@@ -435,7 +435,6 @@ fn construct_instructions_account(message: &SanitizedMessage) -> AccountSharedDa
 #[cfg(test)]
 mod tests {
     use {
-        super::*,
         crate::{
             transaction_account_state_info::TransactionAccountStateInfo,
             transaction_processing_callback::TransactionProcessingCallback,
@@ -451,15 +450,15 @@ mod tests {
             hash::Hash,
             instruction::CompiledInstruction,
             message::{
-                v0::{LoadedAddresses, LoadedMessage},
-                LegacyMessage, Message, MessageHeader, SanitizedMessage,
+                LegacyMessage,
+                Message, MessageHeader, SanitizedMessage, v0::{LoadedAddresses, LoadedMessage},
             },
             native_loader,
             native_token::sol_to_lamports,
             nonce,
             pubkey::Pubkey,
             rent::Rent,
-            rent_collector::{RentCollector, RENT_EXEMPT_RENT_EPOCH},
+            rent_collector::{RENT_EXEMPT_RENT_EPOCH, RentCollector},
             rent_debits::RentDebits,
             reserved_account_keys::ReservedAccountKeys,
             signature::{Keypair, Signature, Signer},
@@ -468,6 +467,7 @@ mod tests {
             transaction_context::{TransactionAccount, TransactionContext},
         },
         std::{borrow::Cow, collections::HashMap, convert::TryFrom, sync::Arc},
+        super::*,
     };
 
     #[derive(Default)]
@@ -862,9 +862,9 @@ mod tests {
                 &mut accumulated_data_size,
                 data_size,
                 requested_data_size_limit,
-                &mut error_metrics
+                &mut error_metrics,
             )
-            .is_ok());
+                .is_ok());
         }
 
         // assert check will fail with correct error if loaded data exceeds limit
@@ -878,9 +878,9 @@ mod tests {
                 &mut accumulated_data_size,
                 data_size,
                 requested_data_size_limit,
-                &mut error_metrics
+                &mut error_metrics,
             )
-            .is_ok());
+                .is_ok());
             assert_eq!(data_size, accumulated_data_size);
 
             // fail - loading more data that would exceed limit
@@ -890,7 +890,7 @@ mod tests {
                     &mut accumulated_data_size,
                     another_byte,
                     requested_data_size_limit,
-                    &mut error_metrics
+                    &mut error_metrics,
                 ),
                 Err(TransactionError::MaxLoadedAccountsDataSizeExceeded)
             );
@@ -937,7 +937,7 @@ mod tests {
                 usize::try_from(compute_budget_processor::MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES)
                     .unwrap(),
             )
-            .unwrap(),
+                .unwrap(),
         ));
         let result_requested_limit: Result<Option<NonZeroUsize>> =
             Ok(Some(NonZeroUsize::new(99).unwrap()));
@@ -970,7 +970,7 @@ mod tests {
                 &NonceVersions::new(NonceState::Initialized(nonce::state::Data::default())),
                 &system_program::id(),
             )
-            .unwrap()
+                .unwrap()
         } else {
             AccountSharedData::new(test_parameter.payer_init_balance, 0, &system_program::id())
         };
@@ -1164,7 +1164,7 @@ mod tests {
         assert_eq!(
             result.unwrap(),
             LoadedTransaction {
-                accounts: vec![(fee_payer_address, fee_payer_account_data),],
+                accounts: vec![(fee_payer_address, fee_payer_account_data)],
                 program_indices: vec![],
                 fee_details: FeeDetails::default(),
                 rollback_accounts: RollbackAccounts::default(),
@@ -1231,7 +1231,7 @@ mod tests {
                     (
                         native_loader::id(),
                         mock_bank.accounts_map[&native_loader::id()].clone()
-                    )
+                    ),
                 ],
                 program_indices: vec![vec![]],
                 fee_details: FeeDetails::default(),
@@ -2012,7 +2012,7 @@ mod tests {
             collect_rent_from_account(&feature_set, &rent_collector, &address, &mut account),
             CollectedInfo {
                 rent_amount: 1,
-                account_data_len_reclaimed: 1
+                account_data_len_reclaimed: 1,
             }
         );
         assert_eq!(account.rent_epoch(), 0);

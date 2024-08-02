@@ -617,7 +617,7 @@ impl AccountSharedData {
     }
 
     #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
-    fn set_data(&mut self, data: Vec<u8>) {
+    pub fn set_data(&mut self, data: Vec<u8>) {
         self.data = Arc::new(data);
     }
 

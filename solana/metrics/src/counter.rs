@@ -5,7 +5,6 @@ use {
     std::{
         env,
         sync::atomic::{AtomicU64, AtomicUsize, Ordering},
-        time::SystemTime,
     },
 };
 
@@ -28,7 +27,6 @@ pub struct Counter {
 pub struct CounterPoint {
     pub name: &'static str,
     pub count: i64,
-    pub timestamp: SystemTime,
 }
 
 impl CounterPoint {
@@ -36,7 +34,6 @@ impl CounterPoint {
         CounterPoint {
             name,
             count: 0,
-            timestamp: std::time::UNIX_EPOCH,
         }
     }
 }
@@ -198,7 +195,6 @@ impl Counter {
             let counter = CounterPoint {
                 name: self.name,
                 count: counts as i64 - lastlog as i64,
-                timestamp: SystemTime::now(),
             };
             submit_counter(counter, level, bucket);
         }

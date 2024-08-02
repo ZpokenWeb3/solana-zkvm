@@ -30,7 +30,7 @@
 //! [cpi]: #cross-program-instruction-execution
 //! [sysvar]: crate::sysvar
 //!
-//! Idiomatic examples of `solana-program` usage can be found in
+//! Idiomatic example-programs of `solana-program` usage can be found in
 //! [the Solana Program Library][spl].
 //!
 //! [spl]: https://github.com/solana-labs/solana-program-library
