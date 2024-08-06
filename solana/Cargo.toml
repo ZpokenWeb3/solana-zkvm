@@ -195,7 +195,7 @@ rand_chacha = "0.3.1"
 rayon = "1.10.0"
 reed-solomon-erasure = "6.0.0"
 regex = "1.10.5"
-reqwest = {version = "0.11.16"}
+reqwest = { version = "0.11.16" }
 reqwest-middleware = "0.2.5"
 rolling-file = "0.2.0"
 rpassword = "7.3"
@@ -231,7 +231,7 @@ solana-frozen-abi = { path = "frozen-abi", version = "=2.0.3" }
 solana-frozen-abi-macro = { path = "frozen-abi/macro", version = "=2.0.3" }
 solana-loader-v4-program = { path = "programs/loader-v4", version = "=2.0.3" }
 solana-logger = { path = "logger", version = "=2.0.3" }
-solana-metrics = { path = "metrics", version = "=2.0.3"}
+solana-metrics = { path = "metrics", version = "=2.0.3" }
 solana-nohash-hasher = "0.2.1"
 solana-package-metadata-macro = { path = "sdk/package-metadata-macro", version = "=2.0.3" }
 solana-poseidon = { path = "poseidon", version = "=2.0.3" }
@@ -245,7 +245,7 @@ solana-system-program = { path = "programs/system", version = "=2.0.3" }
 solana-type-overrides = { path = "type-overrides", version = "=2.0.3" }
 solana-vote = { path = "vote", version = "=2.0.3" }
 solana-vote-program = { path = "programs/vote", version = "=2.0.3" }
-solana_rbpf = "=0.8.1"
+solana_rbpf = { path = "../rbpf", version = "=0.8.1" }
 spl-associated-token-account = "=4.0.0"
 spl-instruction-padding = "0.2"
 spl-memo = "=5.0.0"

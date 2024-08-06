@@ -168,7 +168,6 @@ impl Counter {
             .compare_and_swap(0, Self::default_metrics_rate(), Ordering::Relaxed);
     }
     pub fn inc(&mut self, level: log::Level, events: usize) {
-        let now = timing::timestamp();
         let counts = self.counts.fetch_add(events, Ordering::Relaxed);
         let times = self.times.fetch_add(1, Ordering::Relaxed);
         let lograte = self.lograte.load(Ordering::Relaxed);
@@ -176,11 +175,10 @@ impl Counter {
 
         if times % lograte == 0 && times > 0 && log_enabled!(level) {
             log!(level,
-                "COUNTER:{{\"name\": \"{}\", \"counts\": {}, \"samples\": {},  \"now\": {}, \"events\": {}}}",
+                "COUNTER:{{\"name\": \"{}\", \"counts\": {}, \"samples\": {}, \"events\": {}}}",
                 self.name,
                 counts + events,
                 times,
-                now,
                 events,
             );
         }
@@ -190,14 +188,6 @@ impl Counter {
         let prev = self
             .lastlog
             .compare_and_swap(lastlog, counts, Ordering::Relaxed);
-        if prev == lastlog {
-            let bucket = now / metricsrate;
-            let counter = CounterPoint {
-                name: self.name,
-                count: counts as i64 - lastlog as i64,
-            };
-            submit_counter(counter, level, bucket);
-        }
     }
 }
 #[cfg(test)]

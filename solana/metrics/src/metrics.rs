@@ -45,7 +45,6 @@ impl From<MetricsError> for String {
 impl From<&CounterPoint> for DataPoint {
     fn from(counter_point: &CounterPoint) -> Self {
         let mut point = Self::new(counter_point.name);
-        point.timestamp = counter_point.timestamp;
         point.add_field_i64("count", counter_point.count);
         point
     }
@@ -127,9 +126,6 @@ pub fn serialize_points(points: &Vec<DataPoint>, host_id: &str) -> String {
             let _ = write!(line, "{}{}={}", if first { ' ' } else { ',' }, name, value);
             first = false;
         }
-        let timestamp = point.timestamp.duration_since(UNIX_EPOCH);
-        let nanos = timestamp.unwrap().as_nanos();
-        let _ = writeln!(line, " {nanos}");
     }
     line
 }

@@ -44,6 +44,7 @@ fn main() {
 
     let buffer = load_program("simple-transfer".to_string());
 
+
     // For example:
     let input: Vec<u8> = buffer;
     let time_now: i64 = SystemTime::now()

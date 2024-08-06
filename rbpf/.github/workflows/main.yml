@@ -1,0 +1,104 @@
+name: rbpf
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*.*.*
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        rust: [stable, beta, nightly]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup Rust (rustup)
+      run: |
+        rustup update ${{ matrix.rust }} --no-self-update
+        rustup default ${{ matrix.rust }}
+        rustup component add clippy
+        rustup component add rustfmt
+      shell: bash
+    - name: Lint
+      run: |
+        cargo fmt --all -- --check
+        cargo clippy --all --tests -- --deny=warnings
+      if: matrix.rust == 'nightly'
+      shell: bash
+    - name: Build and test
+      run: |
+        export RUSTFLAGS="-D warnings"
+        cargo build --verbose
+        cargo test --verbose
+        cargo test --test exercise_instructions --verbose
+      shell: bash
+    - name: CLI - Lint
+      run: |
+        cargo fmt --all --manifest-path cli/Cargo.toml -- --check
+        cargo clippy --all --tests --manifest-path cli/Cargo.toml -- --deny=warnings
+      if: matrix.rust == 'nightly'
+      shell: bash
+    - name: CLI - Build and test
+      run: |
+        export RUSTFLAGS="-D warnings"
+        cargo build --manifest-path cli/Cargo.toml --verbose
+        cargo test --manifest-path cli/Cargo.toml --verbose
+      shell: bash
+    - name: Check fuzz
+      run: |
+        export RUSTFLAGS="-D warnings"
+        cargo install cargo-fuzz
+        cargo fuzz build
+      if: matrix.rust == 'nightly' && matrix.os != 'windows-latest'
+      shell: bash
+    - name: Benchmark
+      run: RUSTFLAGS="-D warnings" cargo bench -- --nocapture
+      if: matrix.rust == 'nightly' && matrix.os != 'windows-latest'
+      shell: bash
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup Rust (rustup)
+      run: |
+        rustup update nightly --no-self-update
+        rustup default nightly
+        rustup component add llvm-tools-preview
+      shell: bash
+    - name: Install cargo-llvm-cov
+      run: cargo install cargo-llvm-cov
+      shell: bash
+    - name: Generate test coverage
+      run: |
+        cargo llvm-cov --lcov --output-path coverage.info
+      shell: bash
+    - name: Upload test coverage
+      run: bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+      shell: bash
+
+  release:
+    name: Release
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Doc and package
+      run: |
+        cargo doc
+        cargo package
+      shell: bash
+    - name: Publish
+      env:
+        CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+      run: cargo publish --token "$CRATES_IO_TOKEN"

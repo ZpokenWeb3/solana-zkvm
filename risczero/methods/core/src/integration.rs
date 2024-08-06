@@ -1,25 +1,47 @@
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use std::time::{UNIX_EPOCH};
-use solana_bpf_loader_program::syscalls::{SyscallAbort, SyscallGetClockSysvar, SyscallInvokeSignedRust, SyscallLog, SyscallMemcpy, SyscallMemset, SyscallSetReturnData};
-use solana_compute_budget::compute_budget::ComputeBudget;
-use solana_program::bpf_loader_upgradeable;
-use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
-use solana_program::clock::{Clock, UnixTimestamp};
-use solana_program::hash::Hash;
-use solana_program::instruction::AccountMeta;
-use solana_program::pubkey::Pubkey;
-use solana_program::sysvar::SysvarId;
-use solana_program_runtime::invoke_context::InvokeContext;
-use solana_program_runtime::loaded_programs::{ProgramCache, ProgramCacheEntry, ProgramRuntimeEnvironments};
-use solana_program_runtime::solana_rbpf::program::{BuiltinFunction, BuiltinProgram, FunctionRegistry};
-use solana_program_runtime::solana_rbpf::vm::Config;
-use solana_sdk::account::{AccountSharedData, WritableAccount};
-use solana_sdk::signature::Signature;
-use solana_sdk::transaction::{SanitizedTransaction, TransactionError};
-use solana_svm::account_loader::{CheckedTransactionDetails, TransactionCheckResult};
-use solana_svm::transaction_processor::TransactionBatchProcessor;
-use crate::mock_bank::{MockBankCallback, MockForkGraph};
+use {
+    solana_bpf_loader_program::syscalls::{
+        SyscallAbort, SyscallInvokeSignedRust, SyscallLog, SyscallMemcpy,
+        SyscallMemset, SyscallSetReturnData,
+    },
+    solana_compute_budget::compute_budget::ComputeBudget,
+    solana_program_runtime::{
+        invoke_context::InvokeContext,
+        loaded_programs::{
+            BlockRelation, ForkGraph, ProgramCache, ProgramCacheEntry, ProgramRuntimeEnvironments,
+        },
+        solana_rbpf::{
+            program::{BuiltinFunction, BuiltinProgram, FunctionRegistry},
+            vm::Config,
+        },
+    },
+    solana_sdk::{
+        account::{AccountSharedData, WritableAccount},
+        bpf_loader_upgradeable::{self, UpgradeableLoaderState},
+        clock::{Clock, Epoch, Slot, UnixTimestamp},
+        hash::Hash,
+        instruction::AccountMeta,
+        pubkey::Pubkey,
+        signature::Signature,
+        sysvar::SysvarId,
+        transaction::SanitizedTransaction,
+    },
+    solana_svm::{
+        account_loader::{CheckedTransactionDetails, TransactionCheckResult}
+        ,
+        transaction_processor::TransactionBatchProcessor
+        ,
+    },
+    std::{
+        cmp::Ordering,
+        collections::HashMap
+
+
+        ,
+        sync::{Arc, RwLock}
+        ,
+    },
+};
+use crate::mock_bank::MockBankCallback;
 use crate::transaction_builder::SanitizedTransactionBuilder;
 
 const BPF_LOADER_NAME: &str = "solana_bpf_loader_upgradeable_program";
@@ -29,13 +51,29 @@ const EXECUTION_SLOT: u64 = 5; // The execution slot must be greater than the de
 const DEPLOYMENT_EPOCH: u64 = 0;
 const EXECUTION_EPOCH: u64 = 2; // The execution epoch must be greater than the deployment epoch
 
-fn create_custom_environment<'a>() -> BuiltinProgram<InvokeContext<'a>> {
+pub struct MockForkGraph {}
+
+impl ForkGraph for MockForkGraph {
+    fn relationship(&self, a: Slot, b: Slot) -> BlockRelation {
+        match a.cmp(&b) {
+            Ordering::Less => BlockRelation::Ancestor,
+            Ordering::Equal => BlockRelation::Equal,
+            Ordering::Greater => BlockRelation::Descendant,
+        }
+    }
+
+    fn slot_epoch(&self, _slot: Slot) -> Option<Epoch> {
+        Some(0)
+    }
+}
+
+pub fn create_custom_environment<'a>() -> BuiltinProgram<InvokeContext<'a>> {
     let compute_budget = ComputeBudget::default();
     let vm_config = Config {
         max_call_depth: compute_budget.max_call_depth,
         stack_frame_size: compute_budget.stack_frame_size,
         enable_address_translation: true,
-        enable_stack_frame_gaps: true,
+        enable_stack_frame_gaps: false,
         instruction_meter_checkpoint_distance: 10000,
         enable_instruction_meter: true,
         enable_instruction_tracing: true,
@@ -76,9 +114,6 @@ fn create_custom_environment<'a>() -> BuiltinProgram<InvokeContext<'a>> {
         .register_function_hashed(*b"sol_set_return_data", SyscallSetReturnData::vm)
         .expect("Registration failed");
 
-    function_registry
-        .register_function_hashed(*b"sol_get_clock_sysvar", SyscallGetClockSysvar::vm)
-        .expect("Registration failed");
 
     BuiltinProgram::new_loader(vm_config, function_registry)
 }
@@ -100,7 +135,6 @@ pub fn create_executable_environment(
 
     program_cache.fork_graph = Some(Arc::downgrade(&fork_graph));
 
-    // We must fill in the sysvar cache entries
     let clock = Clock {
         slot: DEPLOYMENT_SLOT,
         epoch_start_timestamp: time_now.saturating_sub(10) as UnixTimestamp,
@@ -117,7 +151,8 @@ pub fn create_executable_environment(
         .insert(Clock::id(), account_data);
 }
 
-pub fn deploy_program(buffer: &mut Vec<u8>, mock_bank: &mut MockBankCallback) -> Pubkey {
+
+pub fn deploy_program(mut buffer: Vec<u8>, mock_bank: &mut MockBankCallback) -> Pubkey {
     let program_account = Pubkey::new_unique();
     let program_data_account = Pubkey::new_unique();
     let state = UpgradeableLoaderState::Program {
@@ -127,7 +162,7 @@ pub fn deploy_program(buffer: &mut Vec<u8>, mock_bank: &mut MockBankCallback) ->
     // The program account must have funds and hold the executable binary
     let mut account_data = AccountSharedData::default();
     account_data.set_data(bincode::serialize(&state).unwrap());
-    account_data.set_lamports(1000);
+    account_data.set_lamports(25);
     account_data.set_owner(bpf_loader_upgradeable::id());
     mock_bank
         .account_shared_data
@@ -144,11 +179,11 @@ pub fn deploy_program(buffer: &mut Vec<u8>, mock_bank: &mut MockBankCallback) ->
         0;
         std::cmp::max(
             0,
-            UpgradeableLoaderState::size_of_programdata_metadata().saturating_sub(header.len())
+            UpgradeableLoaderState::size_of_programdata_metadata().saturating_sub(header.len()),
         )
     ];
     header.append(&mut complement);
-    header.append(buffer);
+    header.append(&mut buffer);
     account_data.set_data(header);
     mock_bank
         .account_shared_data
@@ -191,7 +226,11 @@ pub fn register_builtins(
 
 pub fn prepare_transactions(
     mock_bank: &mut MockBankCallback,
-    program: &mut Vec<u8>
+    program: Vec<u8>,
+    system_account: Pubkey,
+    sender: Pubkey,
+    recipient: Pubkey,
+    fee_payer: Pubkey,
 ) -> (Vec<SanitizedTransaction>, Vec<TransactionCheckResult>) {
     let mut transaction_builder = SanitizedTransactionBuilder::default();
     let mut all_transactions = Vec::new();
@@ -199,10 +238,6 @@ pub fn prepare_transactions(
 
     // A simple funds transfer between accounts
     let transfer_program_account = deploy_program(program, mock_bank);
-    let sender = Pubkey::new_unique();
-    let recipient = Pubkey::new_unique();
-    let fee_payer = Pubkey::new_unique();
-    let system_account = Pubkey::from([0u8; 32]);
 
     transaction_builder.create_instruction(
         transfer_program_account,
@@ -217,19 +252,15 @@ pub fn prepare_transactions(
                 is_signer: false,
                 is_writable: true,
             },
-            AccountMeta {
-                pubkey: system_account,
-                is_signer: false,
-                is_writable: false,
-            },
+            AccountMeta { pubkey: system_account, is_signer: false, is_writable: false },
         ],
         HashMap::from([(sender, Signature::new_unique())]),
-        vec![0, 0, 0, 0, 0, 0, 0, 10],
+        vec![0, 0, 0, 0, 0, 0, 0, 1],
     );
 
     let sanitized_transaction =
         transaction_builder.build(Hash::default(), (fee_payer, Signature::new_unique()), true);
-    all_transactions.push(sanitized_transaction.clone().unwrap());
+    all_transactions.push(sanitized_transaction.unwrap());
     transaction_checks.push(Ok(CheckedTransactionDetails {
         nonce: None,
         lamports_per_signature: 20,
@@ -260,36 +291,6 @@ pub fn prepare_transactions(
         .account_shared_data
         .borrow_mut()
         .insert(recipient, account_data);
-
-
-
-    // fee payer
-    let mut account_data = AccountSharedData::default();
-    account_data.set_lamports(80000);
-    mock_bank
-        .account_shared_data
-        .borrow_mut()
-        .insert(fee_payer, account_data);
-
-    // Sender without enough funds
-    let mut account_data = AccountSharedData::default();
-    account_data.set_lamports(900000);
-    mock_bank
-        .account_shared_data
-        .borrow_mut()
-        .insert(sender, account_data);
-
-    // recipient
-    let mut account_data = AccountSharedData::default();
-    account_data.set_lamports(900000);
-    mock_bank
-        .account_shared_data
-        .borrow_mut()
-        .insert(recipient, account_data);
-
-    // A transaction whose verification has already failed
-    all_transactions.push(sanitized_transaction.unwrap());
-    transaction_checks.push(Err(TransactionError::BlockhashNotFound));
 
     (all_transactions, transaction_checks)
 }
