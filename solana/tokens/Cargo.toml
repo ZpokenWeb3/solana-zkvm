@@ -1,0 +1,42 @@
+[package]
+name = "solana-tokens"
+description = "Blockchain, Rebuilt for Scale"
+documentation = "https://docs.rs/solana-tokens"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+chrono = { workspace = true, features = ["default", "serde"] }
+clap = "2.33.0"
+console = { workspace = true }
+csv = { workspace = true }
+ctrlc = { workspace = true, features = ["termination"] }
+indexmap = { workspace = true }
+indicatif = { workspace = true }
+pickledb = { workspace = true, features = ["yaml"] }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+solana-account-decoder = { workspace = true }
+solana-clap-utils = { workspace = true }
+solana-cli-config = { workspace = true }
+solana-remote-wallet = { workspace = true, features = ["default"] }
+solana-rpc-client = { workspace = true, features = ["default"] }
+solana-rpc-client-api = { workspace = true }
+solana-sdk = { workspace = true }
+solana-transaction-status = { workspace = true }
+solana-version = { workspace = true }
+spl-associated-token-account = { workspace = true }
+spl-token = { workspace = true, features = ["no-entrypoint"] }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+bincode = { workspace = true }
+solana-logger = { workspace = true }
+solana-streamer = { workspace = true }
+solana-test-validator = { workspace = true }

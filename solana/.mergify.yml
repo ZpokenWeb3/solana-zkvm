@@ -1,0 +1,177 @@
+# https://doc.mergify.io/
+pull_request_rules:
+  - name: label changes from community
+    conditions:
+      - author≠@core-contributors
+      - author≠@monorepo-maintainers
+      - author≠@monorepo-write
+      - author≠@monorepo-triage
+      - author≠mergify[bot]
+      - author≠dependabot[bot]
+      - author≠github-actions[bot]
+    actions:
+      label:
+        add:
+          - community
+          - need:merge-assist
+  - name: request review for community changes
+    conditions:
+      - author≠@core-contributors
+      - author≠@monorepo-maintainers
+      - author≠@monorepo-write
+      - author≠@monorepo-triage
+      - author≠mergify[bot]
+      - author≠dependabot[bot]
+      - author≠github-actions[bot]
+      # Only request reviews from the pr subscribers group if no one
+      # has reviewed the community PR yet. These checks only match
+      # reviewers with admin, write or maintain permission on the repository.
+      - "#approved-reviews-by=0"
+      - "#commented-reviews-by=0"
+      - "#changes-requested-reviews-by=0"
+      - "#review-requested=0"
+    actions:
+      request_reviews:
+        teams:
+          - "@anza-xyz/community-pr-subscribers"
+  - name: label changes from monorepo-triage
+    conditions:
+      - author≠@core-contributors
+      - author≠mergify[bot]
+      - author≠dependabot[bot]
+      - author≠github-actions[bot]
+      - author≠@monorepo-maintainers
+      - author≠@monorepo-write
+      - author=@monorepo-triage
+    actions:
+      label:
+        add:
+          - need:merge-assist
+  - name: automatic merge (squash) on CI success
+    conditions:
+      - and:
+        - status-success=buildkite/agave
+        - status-success=ci-gate
+        - label=automerge
+        - label!=no-automerge
+        - or:
+          # only require docs checks if docs files changed
+          - -files~=^docs/
+          - status-success=build & deploy docs
+        - or:
+          - -files~=(\.rs|Cargo\.toml|Cargo\.lock|\.github/scripts/cargo-clippy-before-script\.sh|\.github/workflows/cargo\.yml)$
+          - or:
+            - check-success=clippy-nightly (macos-latest)
+            - check-success=clippy-nightly (macos-latest-large)
+        - or:
+          - -files~=(\.rs|Cargo\.toml|Cargo\.lock|cargo-build-bpf|cargo-test-bpf|cargo-build-sbf|cargo-test-sbf|ci/downstream-projects/run-spl\.sh|\.github/workflows/downstream-project-spl\.yml)$
+          - and:
+            - status-success=cargo-test-sbf (token/program)
+            - status-success=cargo-test-sbf (instruction-padding/program, token/program-2022, token/program-2022-test)
+            - status-success=cargo-test-sbf (associated-token-account/program, associated-token-account/program-test)
+            - status-success=cargo-test-sbf (token-upgrade/program)
+            - status-success=cargo-test-sbf (feature-proposal/program)
+            - status-success=cargo-test-sbf (governance/addin-mock/program, governance/program)
+            - status-success=cargo-test-sbf (memo/program)
+            - status-success=cargo-test-sbf (name-service/program)
+            - status-success=cargo-test-sbf (stake-pool/program)
+            - status-success=cargo-test-sbf (single-pool/program)
+    actions:
+      merge:
+        method: squash
+  - name: remove automerge label on CI failure
+    conditions:
+      - and:
+        - label=automerge
+        - "#status-failure!=0"
+        - -merged
+    actions:
+      label:
+        remove:
+          - automerge
+      comment:
+        message: automerge label removed due to a CI failure
+  - name: v1.17 feature-gate backport
+    conditions:
+      - label=v1.17
+      - label=feature-gate
+    actions:
+      backport:
+        assignees: &BackportAssignee
+          - "{{ merged_by|replace('mergify[bot]', label|select('equalto', 'community')|first|default(author)|replace('community', '@anza-xyz/community-pr-subscribers')) }}"
+        title: "{{ destination_branch }}: {{ title }} (backport of #{{ number }})"
+        ignore_conflicts: true
+        labels:
+          - feature-gate
+        branches:
+          - v1.17
+  - name: v1.17 non-feature-gate backport
+    conditions:
+      - label=v1.17
+      - label!=feature-gate
+    actions:
+      backport:
+        assignees: *BackportAssignee
+        title: "{{ destination_branch }}: {{ title }} (backport of #{{ number }})"
+        ignore_conflicts: true
+        branches:
+          - v1.17
+  - name: v1.17 backport warning comment
+    conditions:
+      - label=v1.17
+    actions:
+      comment:
+        message: >
+          Backports to the stable branch are to be avoided unless absolutely
+          necessary for fixing bugs, security issues, and perf regressions.
+          Changes intended for backport should be structured such that a
+          minimum effective diff can be committed separately from any
+          refactoring, plumbing, cleanup, etc that are not strictly
+          necessary to achieve the goal. Any of the latter should go only
+          into master and ride the normal stabilization schedule.
+  - name: v1.18 feature-gate backport
+    conditions:
+      - label=v1.18
+      - label=feature-gate
+    actions:
+      backport:
+        assignees: *BackportAssignee
+        title: "{{ destination_branch }}: {{ title }} (backport of #{{ number }})"
+        ignore_conflicts: true
+        labels:
+          - feature-gate
+        branches:
+          - v1.18
+  - name: v1.18 non-feature-gate backport
+    conditions:
+      - label=v1.18
+      - label!=feature-gate
+    actions:
+      backport:
+        assignees: *BackportAssignee
+        title: "{{ destination_branch }}: {{ title }} (backport of #{{ number }})"
+        ignore_conflicts: true
+        branches:
+          - v1.18
+  - name: v1.18 backport warning comment
+    conditions:
+      - label=v1.18
+    actions:
+      comment:
+        message: >
+          Backports to the beta branch are to be avoided unless absolutely
+          necessary for fixing bugs, security issues, and perf regressions.
+          Changes intended for backport should be structured such that a
+          minimum effective diff can be committed separately from any
+          refactoring, plumbing, cleanup, etc that are not strictly
+          necessary to achieve the goal. Any of the latter should go only
+          into master and ride the normal stabilization schedule. Exceptions
+          include CI/metrics changes, CLI improvements and documentation
+          updates on a case by case basis.
+
+commands_restrictions:
+  # The author of copied PRs is the Mergify user.
+  # Restrict `copy` access to Core Contributors
+  copy:
+    conditions:
+    - author=@core-contributors

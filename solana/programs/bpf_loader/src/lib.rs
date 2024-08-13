@@ -51,6 +51,9 @@ use {
     syscalls::{create_program_runtime_environment_v1, morph_into_deployment_environment_v1},
 };
 
+#[cfg(feature = "timing")]
+use solana_measure::measure::Measure;
+
 pub const DEFAULT_LOADER_COMPUTE_UNITS: u64 = 570;
 pub const DEPRECATED_LOADER_COMPUTE_UNITS: u64 = 1_140;
 pub const UPGRADEABLE_LOADER_COMPUTE_UNITS: u64 = 2_370;
@@ -62,6 +65,7 @@ thread_local! {
 #[allow(clippy::too_many_arguments)]
 pub fn load_program_from_bytes(
     log_collector: Option<Rc<RefCell<LogCollector>>>,
+    load_program_metrics: &mut LoadProgramMetrics,
     programdata: &[u8],
     loader_key: &Pubkey,
     account_size: usize,
@@ -80,6 +84,7 @@ pub fn load_program_from_bytes(
                 effective_slot,
                 programdata,
                 account_size,
+                load_program_metrics,
             )
         }
     } else {
@@ -90,18 +95,22 @@ pub fn load_program_from_bytes(
             effective_slot,
             programdata,
             account_size,
+            load_program_metrics,
         )
     }
-    .map_err(|err| {
-        ic_logger_msg!(log_collector, "{}", err);
-        InstructionError::InvalidAccountData
-    })?;
+        .map_err(|err| {
+            ic_logger_msg!(log_collector, "{}", err);
+            InstructionError::InvalidAccountData
+        })?;
     Ok(loaded_program)
 }
 
 macro_rules! deploy_program {
     ($invoke_context:expr, $program_id:expr, $loader_key:expr,
      $account_size:expr, $slot:expr, $drop:expr, $new_programdata:expr $(,)?) => {{
+        let mut load_program_metrics = LoadProgramMetrics::default();
+        #[cfg(feature = "timing")]
+        let mut register_syscalls_time = Measure::start("register_syscalls_time");
         let deployment_slot: Slot = $slot;
         let environments = $invoke_context.get_environments_for_slot(
             deployment_slot.saturating_add(DELAY_VISIBILITY_SLOT_OFFSET)
@@ -116,8 +125,13 @@ macro_rules! deploy_program {
             ic_msg!($invoke_context, "Failed to register syscalls: {}", e);
             InstructionError::ProgramEnvironmentSetupFailure
         })?;
-
+        #[cfg(feature = "timing")]{
+            register_syscalls_time.stop();
+            load_program_metrics.register_syscalls_us = register_syscalls_time.as_us();
+        }
         // Verify using stricter deployment_program_runtime_environment
+        #[cfg(feature = "timing")]
+        let mut load_elf_time = Measure::start("load_elf_time");
         let executable = Executable::<InvokeContext>::load(
             $new_programdata,
             Arc::new(deployment_program_runtime_environment),
@@ -125,14 +139,24 @@ macro_rules! deploy_program {
             ic_logger_msg!($invoke_context.get_log_collector(), "{}", err);
             InstructionError::InvalidAccountData
         })?;
-
+        #[cfg(feature = "timing")]{
+            load_elf_time.stop();
+            load_program_metrics.load_elf_us = load_elf_time.as_us();
+            let mut verify_code_time = Measure::start("verify_code_time");
+        }
         executable.verify::<RequisiteVerifier>().map_err(|err| {
             ic_logger_msg!($invoke_context.get_log_collector(), "{}", err);
             InstructionError::InvalidAccountData
         })?;
+        #[cfg(feature = "timing")]
+        {
+            verify_code_time.stop();
+            load_program_metrics.verify_code_us = verify_code_time.as_us();
+        }
         // Reload but with environments.program_runtime_v1
         let executor = load_program_from_bytes(
             $invoke_context.get_log_collector(),
+            &mut load_program_metrics,
             $new_programdata,
             $loader_key,
             $account_size,
@@ -151,7 +175,13 @@ macro_rules! deploy_program {
             );
         }
         $drop
-
+        load_program_metrics.program_id = $program_id.to_string();
+        #[cfg(feature = "timing")]
+        {
+            if let Some(ref mut timings) = $invoke_context.timings {
+                load_program_metrics.submit_datapoint(timings);
+            }
+        }
         $invoke_context.program_cache_for_tx_batch.store_modified_entry($program_id, Arc::new(executor));
     }};
 }
@@ -355,9 +385,9 @@ fn create_memory_mapping<'a, 'b, C: ContextObject>(
         ),
         MemoryRegion::new_writable(heap, MM_HEAP_START),
     ]
-    .into_iter()
-    .chain(additional_regions)
-    .collect();
+        .into_iter()
+        .chain(additional_regions)
+        .collect();
 
     Ok(if let Some(cow_cb) = cow_cb {
         MemoryMapping::new_with_cow(regions, cow_cb, config, sbpf_version)?
@@ -412,8 +442,8 @@ pub fn process_instruction_inner(
             ic_logger_msg!(log_collector, "Invalid BPF loader id");
             Err(InstructionError::IncorrectProgramId)
         }
-        .map(|_| 0)
-        .map_err(|error| Box::new(error) as Box<dyn std::error::Error>);
+            .map(|_| 0)
+            .map_err(|error| Box::new(error) as Box<dyn std::error::Error>);
     }
 
     // Program Invocation
@@ -421,7 +451,8 @@ pub fn process_instruction_inner(
         ic_logger_msg!(log_collector, "Program is not executable");
         return Err(Box::new(InstructionError::IncorrectProgramId));
     }
-    ;
+    #[cfg(feature = "timing")]
+    let mut get_or_create_executor_time = Measure::start("get_or_create_executor_time");
     let executor = invoke_context
         .program_cache_for_tx_batch
         .find(program_account.get_key())
@@ -430,6 +461,15 @@ pub fn process_instruction_inner(
             InstructionError::InvalidAccountData
         })?;
     drop(program_account);
+
+    #[cfg(feature = "timing")]
+    {
+        get_or_create_executor_time.stop();
+        saturating_add_assign!(
+        invoke_context.timings.get_or_create_executor_us,
+        get_or_create_executor_time.as_us()
+        );
+    }
 
     executor.ix_usage_counter.fetch_add(1, Ordering::Relaxed);
     match &executor.program {
@@ -442,7 +482,7 @@ pub fn process_instruction_inner(
         ProgramCacheEntryType::Loaded(executable) => execute(executable, invoke_context),
         _ => Err(Box::new(InstructionError::IncorrectProgramId) as Box<dyn std::error::Error>),
     }
-    .map(|_| 0)
+        .map(|_| 0)
 }
 
 fn process_loader_upgradeable_instruction(
@@ -1291,8 +1331,8 @@ fn common_close_account(
     }
     if *authority_address
         != Some(*transaction_context.get_key_of_account_at_index(
-            instruction_context.get_index_of_instruction_account_in_transaction(2)?,
-        )?)
+        instruction_context.get_index_of_instruction_account_in_transaction(2)?,
+    )?)
     {
         ic_logger_msg!(log_collector, "Incorrect authority provided");
         return Err(InstructionError::IncorrectAuthority);
@@ -1342,12 +1382,15 @@ fn execute<'a, 'b: 'a>(
     let direct_mapping = invoke_context
         .get_feature_set()
         .is_active(&bpf_account_data_direct_mapping::id());
-
+    #[cfg(feature = "timing")]
+    let mut serialize_time = Measure::start("serialize");
     let (parameter_bytes, regions, accounts_metadata) = serialization::serialize_parameters(
         invoke_context.transaction_context,
         instruction_context,
         !direct_mapping,
     )?;
+    #[cfg(feature = "timing")]
+    serialize_time.stop();
 
     // save the account addresses so in case we hit an AccessViolation error we
     // can map to a more specific error
@@ -1365,7 +1408,8 @@ fn execute<'a, 'b: 'a>(
             m.vm_data_addr..vm_end
         })
         .collect::<Vec<_>>();
-
+    #[cfg(feature = "timing")]
+    let mut create_vm_time = Measure::start("create_vm");
     let execution_result = {
         let compute_meter_prev = invoke_context.get_remaining();
         create_vm!(vm, executable, regions, accounts_metadata, invoke_context);
@@ -1376,7 +1420,12 @@ fn execute<'a, 'b: 'a>(
                 return Err(Box::new(InstructionError::ProgramEnvironmentSetupFailure));
             }
         };
-
+        #[cfg(feature = "timing")]
+        create_vm_time.stop();
+        #[cfg(feature = "timing")]
+        {
+            vm.context_object_pointer.execute_time = Some(Measure::start("execute"));
+        }
         let (compute_units_consumed, result) = vm.execute_program(executable, !use_jit);
         MEMORY_POOL.with_borrow_mut(|memory_pool| {
             memory_pool.put_stack(stack);
@@ -1385,6 +1434,13 @@ fn execute<'a, 'b: 'a>(
             debug_assert!(memory_pool.heap_len() <= MAX_INSTRUCTION_STACK_DEPTH);
         });
         drop(vm);
+        #[cfg(feature = "timing")]
+        {
+            if let Some(execute_time) = invoke_context.execute_time.as_mut() {
+                execute_time.stop();
+                saturating_add_assign!(invoke_context.timings.execute_us, execute_time.as_us());
+            }
+        }
 
         ic_logger_msg!(
             log_collector,
@@ -1464,11 +1520,24 @@ fn execute<'a, 'b: 'a>(
             &invoke_context.get_syscall_context()?.accounts_metadata,
         )
     }
-
+    #[cfg(feature = "timing")]
+    let mut deserialize_time = Measure::start("deserialize");
     let execute_or_deserialize_result = execution_result.and_then(|_| {
         deserialize_parameters(invoke_context, parameter_bytes.as_slice(), !direct_mapping)
             .map_err(|error| Box::new(error) as Box<dyn std::error::Error>)
     });
+    #[cfg(feature = "timing")]
+    deserialize_time.stop();
+
+    // Update the timings
+    #[cfg(feature = "timing")]{
+        saturating_add_assign!(invoke_context.timings.serialize_us, serialize_time.as_us());
+        saturating_add_assign!(invoke_context.timings.create_vm_us, create_vm_time.as_us());
+        saturating_add_assign!(
+        invoke_context.timings.deserialize_us,
+        deserialize_time.as_us()
+    );
+    }
 
     execute_or_deserialize_result
 }
@@ -1480,6 +1549,7 @@ pub mod test_utils {
     };
 
     pub fn load_all_invoked_programs(invoke_context: &mut InvokeContext) {
+        let mut load_program_metrics = LoadProgramMetrics::default();
         let program_runtime_environment = create_program_runtime_environment_v1(
             invoke_context.get_feature_set(),
             invoke_context.get_compute_budget(),
@@ -1504,6 +1574,7 @@ pub mod test_utils {
 
                 if let Ok(loaded_program) = load_program_from_bytes(
                     None,
+                    &mut load_program_metrics,
                     account.data(),
                     owner,
                     account.data().len(),
@@ -1842,7 +1913,7 @@ mod tests {
             offset: 0,
             bytes: vec![42; 9],
         })
-        .unwrap();
+            .unwrap();
         process_instruction(
             &loader_id,
             &[],
@@ -1857,7 +1928,7 @@ mod tests {
             offset: 0,
             bytes: vec![42; 9],
         })
-        .unwrap();
+            .unwrap();
         buffer_account
             .set_state(&UpgradeableLoaderState::Buffer {
                 authority_address: Some(buffer_address),
@@ -1893,7 +1964,7 @@ mod tests {
             offset: 3,
             bytes: vec![42; 6],
         })
-        .unwrap();
+            .unwrap();
         let mut buffer_account =
             AccountSharedData::new(1, UpgradeableLoaderState::size_of_buffer(9), &loader_id);
         buffer_account
@@ -1931,7 +2002,7 @@ mod tests {
             offset: 0,
             bytes: vec![42; 10],
         })
-        .unwrap();
+            .unwrap();
         buffer_account
             .set_state(&UpgradeableLoaderState::Buffer {
                 authority_address: Some(buffer_address),
@@ -1951,7 +2022,7 @@ mod tests {
             offset: 1,
             bytes: vec![42; 9],
         })
-        .unwrap();
+            .unwrap();
         buffer_account
             .set_state(&UpgradeableLoaderState::Buffer {
                 authority_address: Some(buffer_address),
@@ -1971,7 +2042,7 @@ mod tests {
             offset: 0,
             bytes: vec![42; 9],
         })
-        .unwrap();
+            .unwrap();
         buffer_account
             .set_state(&UpgradeableLoaderState::Buffer {
                 authority_address: Some(buffer_address),
@@ -2003,7 +2074,7 @@ mod tests {
             offset: 1,
             bytes: vec![42; 9],
         })
-        .unwrap();
+            .unwrap();
         buffer_account
             .set_state(&UpgradeableLoaderState::Buffer {
                 authority_address: Some(buffer_address),
@@ -2037,7 +2108,7 @@ mod tests {
             offset: 1,
             bytes: vec![42; 9],
         })
-        .unwrap();
+            .unwrap();
         buffer_account
             .set_state(&UpgradeableLoaderState::Buffer {
                 authority_address: None,
@@ -2226,7 +2297,7 @@ mod tests {
             state,
             UpgradeableLoaderState::ProgramData {
                 slot: SLOT.saturating_add(1),
-                upgrade_authority_address: Some(upgrade_authority_address)
+                upgrade_authority_address: Some(upgrade_authority_address),
             }
         );
         for (i, byte) in accounts
@@ -3554,7 +3625,7 @@ mod tests {
             &bincode::serialize(&UpgradeableLoaderInstruction::DeployWithMaxDataLen {
                 max_data_len: 0,
             })
-            .unwrap(),
+                .unwrap(),
             vec![
                 (recipient_address, recipient_account),
                 (programdata_address, programdata_account),

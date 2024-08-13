@@ -3,7 +3,7 @@ use {
     crate::unchecked_div_by_const,
     std::{
         sync::atomic::{AtomicU64, Ordering},
-        time::{Duration, UNIX_EPOCH},
+        time::{Duration, SystemTime, UNIX_EPOCH},
     },
 };
 
@@ -32,6 +32,13 @@ pub fn duration_as_s(d: &Duration) -> f32 {
     d.as_secs() as f32 + (d.subsec_nanos() as f32 / 1_000_000_000.0)
 }
 
+/// return timestamp as ms
+pub fn timestamp() -> u64 {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("create timestamp in timing");
+    duration_as_ms(&now)
+}
 
 pub const SECONDS_PER_YEAR: f64 = 365.242_199 * 24.0 * 60.0 * 60.0;
 
@@ -63,6 +70,38 @@ pub struct AtomicInterval {
     last_update: AtomicU64,
 }
 
+impl AtomicInterval {
+    /// true if 'interval_time_ms' has elapsed since last time we returned true as long as it has been 'interval_time_ms' since this struct was created
+    pub fn should_update(&self, interval_time_ms: u64) -> bool {
+        self.should_update_ext(interval_time_ms, true)
+    }
+
+    /// a primary use case is periodic metric reporting, potentially from different threads
+    /// true if 'interval_time_ms' has elapsed since last time we returned true
+    /// except, if skip_first=false, false until 'interval_time_ms' has elapsed since this struct was created
+    pub fn should_update_ext(&self, interval_time_ms: u64, skip_first: bool) -> bool {
+        let now = timestamp();
+        let last = self.last_update.load(Ordering::Relaxed);
+        now.saturating_sub(last) > interval_time_ms
+            && self
+                .last_update
+                .compare_exchange(last, now, Ordering::Relaxed, Ordering::Relaxed)
+                == Ok(last)
+            && !(skip_first && last == 0)
+    }
+
+    /// return ms elapsed since the last time the time was set
+    pub fn elapsed_ms(&self) -> u64 {
+        let now = timestamp();
+        let last = self.last_update.load(Ordering::Relaxed);
+        now.saturating_sub(last) // wrapping somehow?
+    }
+
+    /// return ms until the interval_time will have elapsed
+    pub fn remaining_until_next_interval(&self, interval_time: u64) -> u64 {
+        interval_time.saturating_sub(self.elapsed_ms())
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -71,7 +110,11 @@ mod test {
     #[test]
     fn test_interval_update() {
         solana_logger::setup();
+        let i = AtomicInterval::default();
+        assert!(!i.should_update(1000));
 
+        let i = AtomicInterval::default();
+        assert!(i.should_update_ext(1000, false));
 
         std::thread::sleep(Duration::from_millis(10));
         assert!(i.elapsed_ms() > 9 && i.elapsed_ms() < 1000);

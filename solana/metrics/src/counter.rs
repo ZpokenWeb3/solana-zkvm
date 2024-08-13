@@ -5,6 +5,7 @@ use {
     std::{
         env,
         sync::atomic::{AtomicU64, AtomicUsize, Ordering},
+        time::SystemTime,
     },
 };
 
@@ -27,6 +28,7 @@ pub struct Counter {
 pub struct CounterPoint {
     pub name: &'static str,
     pub count: i64,
+    pub timestamp: SystemTime,
 }
 
 impl CounterPoint {
@@ -34,6 +36,7 @@ impl CounterPoint {
         CounterPoint {
             name,
             count: 0,
+            timestamp: std::time::UNIX_EPOCH,
         }
     }
 }
@@ -168,6 +171,7 @@ impl Counter {
             .compare_and_swap(0, Self::default_metrics_rate(), Ordering::Relaxed);
     }
     pub fn inc(&mut self, level: log::Level, events: usize) {
+        let now = timing::timestamp();
         let counts = self.counts.fetch_add(events, Ordering::Relaxed);
         let times = self.times.fetch_add(1, Ordering::Relaxed);
         let lograte = self.lograte.load(Ordering::Relaxed);
@@ -175,10 +179,11 @@ impl Counter {
 
         if times % lograte == 0 && times > 0 && log_enabled!(level) {
             log!(level,
-                "COUNTER:{{\"name\": \"{}\", \"counts\": {}, \"samples\": {}, \"events\": {}}}",
+                "COUNTER:{{\"name\": \"{}\", \"counts\": {}, \"samples\": {},  \"now\": {}, \"events\": {}}}",
                 self.name,
                 counts + events,
                 times,
+                now,
                 events,
             );
         }
@@ -188,6 +193,15 @@ impl Counter {
         let prev = self
             .lastlog
             .compare_and_swap(lastlog, counts, Ordering::Relaxed);
+        if prev == lastlog {
+            let bucket = now / metricsrate;
+            let counter = CounterPoint {
+                name: self.name,
+                count: counts as i64 - lastlog as i64,
+                timestamp: SystemTime::now(),
+            };
+            submit_counter(counter, level, bucket);
+        }
     }
 }
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use std::{env, fs};
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 use risc0_zkvm::{default_prover, ExecutorEnv};
 
@@ -24,6 +24,19 @@ fn load_program(name: String) -> Vec<u8> {
     buffer
 }
 
+fn load_versioned_tx_from_json(name: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut dir = env::current_dir().unwrap();
+    dir.push("example-transactions");
+    let name = name.replace('-', "_");
+    dir.push(name + "_transaction.bin");
+    let mut file = File::open(dir).unwrap();
+    let mut read_bytes = Vec::new();
+    file.read_to_end(&mut read_bytes).unwrap();
+    Ok(read_bytes)
+}
+
+
+
 fn main() {
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
     tracing_subscriber::fmt()
@@ -41,23 +54,31 @@ fn main() {
     // To access this method, you'll need to use ExecutorEnv::builder(), which
     // creates an ExecutorEnvBuilder. When you're done adding input, call
     // ExecutorEnvBuilder::build().
-
-    let buffer = load_program("simple-transfer".to_string());
-
+    //
+    // let buffer = load_program("hello-solana".to_string());
 
     // For example:
-    let input: Vec<u8> = buffer;
-    let time_now: i64 = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs() as i64;
+    // let input: Vec<u8> = buffer;
+    // let time_now: i64 = SystemTime::now()
+    //     .duration_since(UNIX_EPOCH)
+    //     .expect("Time went backwards")
+    //     .as_secs() as i64;
+
+    let tx = load_versioned_tx_from_json("hello-solana".to_string()).unwrap();
+
     let env = ExecutorEnv::builder()
-        .write(&input)
-        .unwrap()
-        .write(&time_now)
+        .write(&tx)
         .unwrap()
         .build()
         .unwrap();
+
+    // let env = ExecutorEnv::builder()
+    //     .write(&input)
+    //     .unwrap()
+    //     .write(&time_now)
+    //     .unwrap()
+    //     .build()
+    //     .unwrap();
 
     // Obtain the default prover.
     let prover = default_prover();

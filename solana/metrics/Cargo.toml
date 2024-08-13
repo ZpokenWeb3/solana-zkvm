@@ -14,7 +14,7 @@ crossbeam-channel = { workspace = true }
 gethostname = { workspace = true }
 lazy_static = { workspace = true }
 log = { workspace = true }
-reqwest = { workspace = true, features = ["brotli", "deflate", "gzip", "json", "blocking"] }
+reqwest = { workspace = true, features = ["blocking", "brotli", "deflate", "gzip", "rustls-tls", "json"] }
 solana-sdk = { workspace = true }
 thiserror = { workspace = true }
 
@@ -31,3 +31,6 @@ name = "metrics"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
+
+[features]
+timing = []

@@ -15,6 +15,7 @@ use {
     },
     solana_type_overrides::sync::Arc,
 };
+use solana_sdk::sysvar;
 
 #[cfg(all(RUSTC_WITH_SPECIALIZATION, feature = "frozen-abi"))]
 impl ::solana_frozen_abi::abi_example::AbiExample for SysvarCache {
@@ -48,6 +49,11 @@ pub struct SysvarCache {
     recent_blockhashes: Option<RecentBlockhashes>,
 }
 
+const FEES_ID: Pubkey = solana_sdk::pubkey!("SysvarFees111111111111111111111111111111111");
+const RECENT_BLOCKHASHES_ID: Pubkey =
+    solana_sdk::pubkey!("SysvarRecentB1ockHashes11111111111111111111");
+
+
 impl SysvarCache {
     // this is exposed for SyscallGetSysvar and should not otherwise be used
     pub fn sysvar_id_to_buffer(&self, sysvar_id: &Pubkey) -> &Option<Vec<u8>> {
@@ -68,6 +74,104 @@ impl SysvarCache {
         } else {
             &None
         }
+    }
+
+    pub fn set_sysvar<T: Sysvar + SysvarId>(&mut self, sysvar: &T) {
+        let data = bincode::serialize(sysvar).expect("Failed to serialize sysvar.");
+        let sysvar_id = T::id();
+        match sysvar_id {
+            sysvar::clock::ID => {
+                println!("Matched sysvar::clock::ID");
+                self.clock = Some(data);
+            }
+            sysvar::epoch_rewards::ID => {
+                println!("Matched sysvar::epoch_rewards::ID");
+                self.epoch_rewards = Some(data);
+            }
+            sysvar::epoch_schedule::ID => {
+                println!("Matched sysvar::epoch_schedule::ID");
+                self.epoch_schedule = Some(data);
+            }
+            FEES_ID => {
+                println!("Matched FEES_ID");
+                let fees: Fees =
+                    bincode::deserialize(&data).expect("Failed to deserialize Fees sysvar.");
+                self.fees = Some(fees);
+            }
+            sysvar::last_restart_slot::ID => {
+                println!("Matched sysvar::last_restart_slot::ID");
+                self.last_restart_slot = Some(data);
+            }
+            RECENT_BLOCKHASHES_ID => {
+                println!("Matched RECENT_BLOCKHASHES_ID");
+                let recent_blockhashes: RecentBlockhashes = bincode::deserialize(&data)
+                    .expect("Failed to deserialize RecentBlockhashes sysvar.");
+                self.recent_blockhashes = Some(recent_blockhashes);
+            }
+            sysvar::rent::ID => {
+                println!("Matched sysvar::rent::ID");
+                self.rent = Some(data);
+            }
+            sysvar::slot_hashes::ID => {
+                println!("Matched sysvar::slot_hashes::ID");
+                let slot_hashes: SlotHashes =
+                    bincode::deserialize(&data).expect("Failed to deserialize SlotHashes sysvar.");
+                self.slot_hashes = Some(data);
+                self.slot_hashes_obj = Some(Arc::new(slot_hashes));
+            }
+            sysvar::stake_history::ID => {
+                println!("Matched sysvar::stake_history::ID");
+                let stake_history: StakeHistory = bincode::deserialize(&data)
+                    .expect("Failed to deserialize StakeHistory sysvar.");
+                self.stake_history = Some(data);
+                self.stake_history_obj = Some(Arc::new(stake_history));
+            }
+            _ => {
+                println!("Unrecognized Sysvar ID: {sysvar_id:?}");
+                panic!("Unrecognized Sysvar ID: {sysvar_id}");
+            }
+        }
+        // match sysvar_id {
+        //     sysvar::clock::ID => {
+        //         self.clock = Some(data);
+        //     }
+        //     sysvar::epoch_rewards::ID => {
+        //         self.epoch_rewards = Some(data);
+        //     }
+        //     sysvar::epoch_schedule::ID => {
+        //         self.epoch_schedule = Some(data);
+        //     }
+        //     FEES_ID => {
+        //         let fees: Fees =
+        //             bincode::deserialize(&data).expect("Failed to deserialize Fees sysvar.");
+        //         self.fees = Some(fees);
+        //     }
+        //     sysvar::last_restart_slot::ID => {
+        //         self.last_restart_slot = Some(data);
+        //     }
+        //     RECENT_BLOCKHASHES_ID => {
+        //         let recent_blockhashes: RecentBlockhashes = bincode::deserialize(&data)
+        //             .expect("Failed to deserialize RecentBlockhashes sysvar.");
+        //         self.recent_blockhashes = Some(recent_blockhashes);
+        //     }
+        //     sysvar::rent::ID => {
+        //         println!("MATCHED ID");
+        //         self.rent = Some(data);
+        //     }
+        //     sysvar::slot_hashes::ID => {
+        //         let slot_hashes: SlotHashes =
+        //             bincode::deserialize(&data).expect("Failed to deserialize SlotHashes sysvar.");
+        //         self.slot_hashes = Some(data);
+        //         self.slot_hashes_obj = Some(Arc::new(slot_hashes));
+        //     }
+        //     sysvar::stake_history::ID => {
+        //         let stake_history: StakeHistory = bincode::deserialize(&data)
+        //             .expect("Failed to deserialize StakeHistory sysvar.");
+        //         self.stake_history = Some(data);
+        //         self.stake_history_obj = Some(Arc::new(stake_history));
+        //     }
+        //     _ => panic!("Unrecognized Sysvar ID: {sysvar_id}"),
+        // }
     }
 
     // most if not all of the obj getter functions can be removed once builtins transition to bpf

@@ -1,0 +1,73 @@
+[package]
+name = "agave-ledger-tool"
+description = "Blockchain, Rebuilt for Scale"
+documentation = "https://docs.rs/agave-ledger-tool"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+bs58 = { workspace = true }
+chrono = { workspace = true, features = ["default"] }
+clap = { workspace = true }
+crossbeam-channel = { workspace = true }
+csv = { workspace = true }
+dashmap = { workspace = true }
+futures = { workspace = true }
+histogram = { workspace = true }
+itertools = { workspace = true }
+log = { workspace = true }
+num_cpus = { workspace = true }
+rayon = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+serde_json = { workspace = true }
+solana-account-decoder = { workspace = true }
+solana-accounts-db = { workspace = true }
+solana-bpf-loader-program = { workspace = true }
+solana-clap-utils = { workspace = true }
+solana-cli-output = { workspace = true }
+solana-compute-budget = { workspace = true }
+solana-core = { workspace = true }
+solana-cost-model = { workspace = true }
+solana-entry = { workspace = true }
+solana-geyser-plugin-manager = { workspace = true }
+solana-gossip = { workspace = true }
+solana-ledger = { workspace = true, features = ["dev-context-only-utils"] }
+solana-logger = { workspace = true }
+solana-measure = { workspace = true }
+solana-program-runtime = { workspace = true }
+solana-rpc = { workspace = true }
+solana-runtime = { workspace = true, features = ["dev-context-only-utils"] }
+solana-sdk = { workspace = true }
+solana-stake-program = { workspace = true }
+solana-storage-bigtable = { workspace = true }
+solana-streamer = { workspace = true }
+solana-transaction-status = { workspace = true }
+solana-type-overrides = { workspace = true }
+solana-unified-scheduler-pool = { workspace = true }
+solana-version = { workspace = true }
+solana-vote-program = { workspace = true }
+solana_rbpf = { workspace = true, features = ["debugger"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+jemallocator = { workspace = true }
+
+[dev-dependencies]
+assert_cmd = { workspace = true }
+bytecount = { workspace = true }
+
+[features]
+dev-context-only-utils = []
+
+[target."cfg(unix)".dependencies]
+signal-hook = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

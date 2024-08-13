@@ -33,6 +33,9 @@ use {
     std::{cell::RefCell, rc::Rc},
 };
 
+#[cfg(feature = "timing")]
+use solana_measure::measure::Measure;
+
 pub const DEFAULT_COMPUTE_UNITS: u64 = 2_000;
 
 pub fn get_state(data: &[u8]) -> Result<&LoaderV4State, InstructionError> {
@@ -159,7 +162,14 @@ fn execute<'a, 'b: 'a>(
     let use_jit = executable.get_compiled_program().is_some();
 
     let compute_meter_prev = invoke_context.get_remaining();
+    #[cfg(feature = "timing")]
+    let mut create_vm_time = Measure::start("create_vm");
     let mut vm = create_vm(invoke_context, executable)?;
+    #[cfg(feature = "timing")]
+    {
+        create_vm_time.stop();
+        let mut execute_time = Measure::start("execute");
+    }
     stable_log::program_invoke(&log_collector, &program_id, stack_height);
     let (compute_units_consumed, result) = vm.execute_program(executable, !use_jit);
     drop(vm);
@@ -170,6 +180,13 @@ fn execute<'a, 'b: 'a>(
         compute_units_consumed,
         compute_meter_prev
     );
+
+    #[cfg(feature = "timing")]{
+        execute_time.stop();
+        let timings = &mut invoke_context.timings;
+        timings.create_vm_us = timings.create_vm_us.saturating_add(create_vm_time.as_us());
+        timings.execute_us = timings.execute_us.saturating_add(execute_time.as_us());
+    }
 
     match result {
         ProgramResult::Ok(status) if status != SUCCESS => {
@@ -404,6 +421,11 @@ pub fn process_instruction_deploy(
             ic_logger_msg!(log_collector, "Failed to get runtime environment {}", err);
             InstructionError::InvalidArgument
         })?;
+
+    let mut load_program_metrics = LoadProgramMetrics {
+        program_id: buffer.get_key().to_string(),
+        ..LoadProgramMetrics::default()
+    };
     let executor = ProgramCacheEntry::new(
         &loader_v4::id(),
         environments.program_runtime_v2.clone(),
@@ -411,12 +433,15 @@ pub fn process_instruction_deploy(
         effective_slot,
         programdata,
         buffer.get_data().len(),
+        &mut load_program_metrics,
     )
     .map_err(|err| {
         ic_logger_msg!(log_collector, "{}", err);
         InstructionError::InvalidAccountData
     })?;
 
+    #[cfg(feature = "timing")]
+    load_program_metrics.submit_datapoint(&mut invoke_context.timings);
     if let Some(mut source_program) = source_program {
         let rent = invoke_context.get_sysvar_cache().get_rent()?;
         let required_lamports = rent.minimum_balance(source_program.get_data().len());
@@ -574,7 +599,8 @@ pub fn process_instruction_inner(
             ic_logger_msg!(log_collector, "Program is not deployed");
             return Err(Box::new(InstructionError::InvalidArgument));
         }
-
+        #[cfg(feature = "timing")]
+        let mut get_or_create_executor_time = Measure::start("get_or_create_executor_time");
         let loaded_program = invoke_context
             .program_cache_for_tx_batch
             .find(program.get_key())
@@ -582,7 +608,13 @@ pub fn process_instruction_inner(
                 ic_logger_msg!(log_collector, "Program is not cached");
                 InstructionError::InvalidAccountData
             })?;
-
+        #[cfg(feature = "timing")]{
+            get_or_create_executor_time.stop();
+            saturating_add_assign!(
+            invoke_context.timings.get_or_create_executor_us,
+            get_or_create_executor_time.as_us()
+        );
+        }
         drop(program);
         loaded_program
             .ix_usage_counter
@@ -620,6 +652,7 @@ mod tests {
     };
 
     pub fn load_all_invoked_programs(invoke_context: &mut InvokeContext) {
+        let mut load_program_metrics = LoadProgramMetrics::default();
         let num_accounts = invoke_context.transaction_context.get_number_of_accounts();
         for index in 0..num_accounts {
             let account = invoke_context
@@ -649,6 +682,7 @@ mod tests {
                         0,
                         programdata,
                         account.data().len(),
+                        &mut load_program_metrics,
                     ) {
                         invoke_context
                             .program_cache_for_tx_batch

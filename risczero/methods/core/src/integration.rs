@@ -41,6 +41,7 @@ use {
         ,
     },
 };
+use solana_sdk::transaction::VersionedTransaction;
 use crate::mock_bank::MockBankCallback;
 use crate::transaction_builder::SanitizedTransactionBuilder;
 
@@ -236,39 +237,20 @@ pub fn prepare_transactions(
     let mut all_transactions = Vec::new();
     let mut transaction_checks = Vec::new();
 
-    // A simple funds transfer between accounts
-    let transfer_program_account = deploy_program(program, mock_bank);
+    let hello_program_account = deploy_program(program, mock_bank);
 
-    transaction_builder.create_instruction(
-        transfer_program_account,
-        vec![
-            AccountMeta {
-                pubkey: sender,
-                is_signer: true,
-                is_writable: true,
-            },
-            AccountMeta {
-                pubkey: recipient,
-                is_signer: false,
-                is_writable: true,
-            },
-            AccountMeta { pubkey: system_account, is_signer: false, is_writable: false },
-        ],
-        HashMap::from([(sender, Signature::new_unique())]),
-        vec![0, 0, 0, 0, 0, 0, 0, 1],
-    );
+    let fee_payer = Pubkey::new_unique();
+    transaction_builder.create_instruction(hello_program_account, Vec::new(), HashMap::new(), Vec::new());
 
     let sanitized_transaction =
-        transaction_builder.build(Hash::default(), (fee_payer, Signature::new_unique()), true);
+        transaction_builder.build(Hash::default(), (fee_payer, Signature::new_unique()), false);
+
     all_transactions.push(sanitized_transaction.unwrap());
     transaction_checks.push(Ok(CheckedTransactionDetails {
         nonce: None,
         lamports_per_signature: 20,
     }));
 
-    // Setting up the accounts for the transfer
-
-    // fee payer
     let mut account_data = AccountSharedData::default();
     account_data.set_lamports(80000);
     mock_bank
@@ -276,21 +258,119 @@ pub fn prepare_transactions(
         .borrow_mut()
         .insert(fee_payer, account_data);
 
-    // sender
-    let mut account_data = AccountSharedData::default();
-    account_data.set_lamports(900000);
-    mock_bank
-        .account_shared_data
-        .borrow_mut()
-        .insert(sender, account_data);
-
-    // recipient
-    let mut account_data = AccountSharedData::default();
-    account_data.set_lamports(900000);
-    mock_bank
-        .account_shared_data
-        .borrow_mut()
-        .insert(recipient, account_data);
+    // A simple funds transfer between accounts
+    // let transfer_program_account = deploy_program(program, mock_bank);
+    //
+    // transaction_builder.create_instruction(
+    //     transfer_program_account,
+    //     vec![
+    //         AccountMeta {
+    //             pubkey: sender,
+    //             is_signer: true,
+    //             is_writable: true,
+    //         },
+    //         AccountMeta {
+    //             pubkey: recipient,
+    //             is_signer: false,
+    //             is_writable: true,
+    //         },
+    //         AccountMeta { pubkey: system_account, is_signer: false, is_writable: false },
+    //     ],
+    //     HashMap::from([(sender, Signature::new_unique())]),
+    //     vec![0, 0, 0, 0, 0, 0, 0, 1],
+    // );
+    //
+    // let sanitized_transaction =
+    //     transaction_builder.build(Hash::default(), (fee_payer, Signature::new_unique()), true);
+    // all_transactions.push(sanitized_transaction.unwrap());
+    // transaction_checks.push(Ok(CheckedTransactionDetails {
+    //     nonce: None,
+    //     lamports_per_signature: 20,
+    // }));
+    //
+    // // // Setting up the accounts for the transfer
+    // //
+    // // // fee payer
+    // let mut account_data = AccountSharedData::default();
+    // account_data.set_lamports(80000);
+    // // mock_bank
+    //     .account_shared_data
+    //     .borrow_mut()
+    //     .insert(fee_payer, account_data);
+    //
+    // // sender
+    // let mut account_data = AccountSharedData::default();
+    // account_data.set_lamports(900000);
+    // mock_bank
+    //     .account_shared_data
+    //     .borrow_mut()
+    //     .insert(sender, account_data);
+    //
+    // // recipient
+    // let mut account_data = AccountSharedData::default();
+    // account_data.set_lamports(900000);
+    // mock_bank
+    //     .account_shared_data
+    //     .borrow_mut()
+    //     .insert(recipient, account_data);
 
     (all_transactions, transaction_checks)
+}
+
+fn get_transaction(program: Vec<u8>) -> VersionedTransaction{
+    let mut mock_bank = MockBankCallback::default();
+    let program_id = Pubkey::new_from_array([4u8; 32]);
+    let sender = Pubkey::new_from_array([1u8; 32]);
+    let recipient = Pubkey::new_from_array([2u8; 32]);
+    let fee_payer = Pubkey::new_from_array([3u8; 32]);
+    let (transactions, check_results) = prepare_transactions(
+        &mut mock_bank,
+        program,
+        program_id,
+        sender,
+        recipient,
+        fee_payer);
+    println!("Check results: {:?}, transactions: {:?}", check_results, transactions);
+    transactions.first().unwrap().to_versioned_transaction()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{env, fs};
+    use std::fs::File;
+    use std::io::{BufReader, Read, Write};
+    use solana_program::message::VersionedMessage;
+    use solana_sdk::transaction::VersionedTransaction;
+    use crate::integration::get_transaction;
+
+    fn load_program(name: String) -> Vec<u8> {
+        // Loading the program file
+        let mut dir = env::current_dir().unwrap();
+        dir.pop();
+        dir.pop();
+        dir.push("host");
+        dir.push("example-programs");
+        let name = name.replace('-', "_");
+        dir.push(name + "_program.so");
+        println!("Dir: {:?}", dir.to_str());
+        let mut file = File::open(dir.clone()).expect("file not found");
+        let metadata = fs::metadata(dir).expect("Unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        file.read_exact(&mut buffer).expect("Buffer overflow");
+        buffer
+    }
+
+    #[test]
+    fn test_hex_encode_tx() {
+        let buffer = load_program("hello-solana".to_string());
+        let transaction = get_transaction(buffer);
+        let verify = transaction.verify_and_hash_message().unwrap();
+        // let bytes = bincode::serialize(&transaction).unwrap();
+        // let tx_from_bytes: VersionedTransaction = bincode::deserialize(&bytes).unwrap();
+        // let mut file = File::create("hello_solana_transaction.bin").unwrap();
+        // file.write_all(&bytes).unwrap();
+        // assert_eq!(transaction, tx_from_bytes);
+        println!("TRANSACTION: {:?}", transaction);
+
+    }
 }

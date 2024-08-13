@@ -1,3 +1,4 @@
+use std::time::SystemTime;
 use {
     crate::{
         ic_msg,
@@ -11,6 +12,7 @@ use {
         timings::{ExecuteDetailsTimings, ExecuteTimings},
     },
     solana_compute_budget::compute_budget::ComputeBudget,
+    solana_measure::measure::Measure,
     solana_rbpf::{
         ebpf::MM_HEAP_START,
         error::{EbpfError, ProgramResult},
@@ -201,6 +203,9 @@ pub struct InvokeContext<'a> {
     /// the designated compute budget during program execution.
     compute_meter: RefCell<u64>,
     log_collector: Option<Rc<RefCell<LogCollector>>>,
+    /// Latest measurement not yet accumulated in [ExecuteDetailsTimings::execute_us]
+    pub execute_time: Option<Measure>,
+    pub timings: Option<ExecuteDetailsTimings>,
     pub syscall_context: Vec<Option<SyscallContext>>,
     traces: Vec<Vec<[u64; 12]>>,
 }
@@ -221,6 +226,12 @@ impl<'a> InvokeContext<'a> {
             log_collector,
             compute_budget,
             compute_meter: RefCell::new(compute_budget.compute_unit_limit),
+            execute_time: None,
+            timings: if cfg!(feature = "timing") {
+                Some(ExecuteDetailsTimings::default())
+            } else {
+                None
+            },
             syscall_context: Vec::new(),
             traces: Vec::new(),
         }
@@ -312,6 +323,7 @@ impl<'a> InvokeContext<'a> {
             &instruction_accounts,
             &program_indices,
             &mut compute_units_consumed,
+            &mut ExecuteTimings::default(),
         )?;
         Ok(())
     }
@@ -446,13 +458,14 @@ impl<'a> InvokeContext<'a> {
         instruction_accounts: &[InstructionAccount],
         program_indices: &[IndexOfAccount],
         compute_units_consumed: &mut u64,
+        timings: &mut ExecuteTimings,
     ) -> Result<(), InstructionError> {
         *compute_units_consumed = 0;
         self.transaction_context
             .get_next_instruction_context()?
             .configure(program_indices, instruction_accounts, instruction_data);
         self.push()?;
-        self.process_executable_chain(compute_units_consumed)
+        self.process_executable_chain(compute_units_consumed, timings)
             // MUST pop if and only if `push` succeeded, independent of `result`.
             // Thus, the `.and()` instead of an `.and_then()`.
             .and(self.pop())
@@ -462,8 +475,11 @@ impl<'a> InvokeContext<'a> {
     fn process_executable_chain(
         &mut self,
         compute_units_consumed: &mut u64,
+        timings: &mut ExecuteTimings,
     ) -> Result<(), InstructionError> {
         let instruction_context = self.transaction_context.get_current_instruction_context()?;
+        #[cfg(feature = "timing")]
+        let process_executable_chain_time = Measure::start("process_executable_chain_time");
 
         let builtin_id = {
             let borrowed_root_account = instruction_context
@@ -545,6 +561,14 @@ impl<'a> InvokeContext<'a> {
             return Err(InstructionError::BuiltinProgramsMustConsumeComputeUnits);
         }
 
+        #[cfg(feature = "timing")]
+        saturating_add_assign!(
+            timings
+                .execute_accessories
+                .process_instructions
+                .process_executable_chain_us,
+            process_executable_chain_time.end_as_us()
+        );
         result
     }
 
@@ -779,6 +803,7 @@ pub fn mock_process_instruction<F: FnMut(&mut InvokeContext), G: FnMut(&mut Invo
         &instruction_accounts,
         &program_indices,
         &mut 0,
+        &mut ExecuteTimings::default(),
     );
     assert_eq!(result, expected_result);
     post_adjustments(&mut invoke_context);
@@ -1099,6 +1124,7 @@ mod tests {
                 &inner_instruction_accounts,
                 &program_indices,
                 &mut compute_units_consumed,
+                &mut ExecuteTimings::default(),
             );
 
             // Because the instruction had compute cost > 0, then regardless of the execution result,
@@ -1190,6 +1216,7 @@ mod tests {
                 &instruction_accounts,
                 &[2],
                 &mut 0,
+                &mut ExecuteTimings::default(),
             );
 
             assert!(result.is_ok());
@@ -1214,6 +1241,7 @@ mod tests {
                 &instruction_accounts,
                 &[2],
                 &mut 0,
+                &mut ExecuteTimings::default(),
             );
 
             assert!(result.is_ok());
@@ -1238,6 +1266,7 @@ mod tests {
                 &instruction_accounts,
                 &[2],
                 &mut 0,
+                &mut ExecuteTimings::default(),
             );
 
             assert!(result.is_ok());

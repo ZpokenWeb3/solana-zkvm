@@ -62,6 +62,10 @@ use {
     },
 };
 
+#[cfg(feature = "timing")]
+use solana_measure::{measure, measure::Measure};
+
+
 /// A list of log messages emitted during a transaction
 pub type TransactionLogMessages = Vec<String>;
 
@@ -70,6 +74,8 @@ pub type TransactionLogMessages = Vec<String>;
 pub struct LoadAndExecuteSanitizedTransactionsOutput {
     /// Error metrics for transactions that were processed.
     pub error_metrics: TransactionErrorMetrics,
+    /// Timings for transaction batch execution.
+    pub execute_timings: ExecuteTimings,
     // Vector of results indicating whether a transaction was executed or could not
     // be executed. Note executed transactions can still have failed!
     pub execution_results: Vec<TransactionExecutionResult>,
@@ -225,10 +231,27 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         check_results: Vec<TransactionCheckResult>,
         environment: &TransactionProcessingEnvironment,
         config: &TransactionProcessingConfig,
-    )  -> LoadAndExecuteSanitizedTransactionsOutput{
+    ) -> LoadAndExecuteSanitizedTransactionsOutput {
         // Initialize metrics.
         let mut error_metrics = TransactionErrorMetrics::default();
+        let mut execute_timings = ExecuteTimings::default();
 
+        #[cfg(feature = "timing")]
+        let (validation_results, validate_fees_time) = measure!(self.validate_fees(
+            callbacks,
+            sanitized_txs,
+            check_results,
+            &environment.feature_set,
+            environment
+                .fee_structure
+                .unwrap_or(&FeeStructure::default()),
+            environment
+                .rent_collector
+                .unwrap_or(&RentCollector::default()),
+            &mut error_metrics
+        ));
+
+        #[cfg(not(feature = "timing"))]
         let validation_results = self.validate_fees(
             callbacks,
             sanitized_txs,
@@ -242,7 +265,8 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                 .unwrap_or(&RentCollector::default()),
             &mut error_metrics
         );
-
+        #[cfg(feature = "timing")]
+        let mut program_cache_time = Measure::start("program_cache");
         let mut program_accounts_map = Self::filter_executable_program_accounts(
             callbacks,
             sanitized_txs,
@@ -267,11 +291,16 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                 vec![TransactionExecutionResult::NotExecuted(ERROR); sanitized_txs.len()];
             return LoadAndExecuteSanitizedTransactionsOutput {
                 error_metrics,
+                execute_timings,
                 execution_results,
                 loaded_transactions,
             };
         }
+        #[cfg(feature = "timing")]{
+            program_cache_time.stop();
 
+            let mut load_time = Measure::start("accounts_load");
+        }
         let mut loaded_transactions = load_accounts(
             callbacks,
             sanitized_txs,
@@ -284,7 +313,11 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                 .unwrap_or(&RentCollector::default()),
             &program_cache_for_tx_batch.borrow(),
         );
+        #[cfg(feature = "timing")]{
+            load_time.stop();
 
+            let mut execution_time = Measure::start("execution_time");
+        }
         let execution_results: Vec<TransactionExecutionResult> = loaded_transactions
             .iter_mut()
             .zip(sanitized_txs.iter())
@@ -294,6 +327,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                     let result = self.execute_loaded_transaction(
                         tx,
                         loaded_transaction,
+                        &mut execute_timings,
                         &mut error_metrics,
                         &mut program_cache_for_tx_batch.borrow_mut(),
                         environment,
@@ -318,7 +352,8 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                 }
             })
             .collect();
-
+        #[cfg(feature = "timing")]
+        execution_time.stop();
 
         // Skip eviction when there's no chance this particular tx batch has increased the size of
         // ProgramCache entries. Note that loaded_missing is deliberately defined, so that there's
@@ -336,9 +371,31 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                     self.slot,
                 );
         }
+        #[cfg(feature = "timing")]{
+            debug!(
+            "load: {}us execute: {}us txs_len={}",
+            load_time.as_us(),
+            execution_time.as_us(),
+            sanitized_txs.len(),
+        );
+
+
+            execute_timings.saturating_add_in_place(
+                ExecuteTimingType::ValidateFeesUs,
+                validate_fees_time.as_us(),
+            );
+            execute_timings.saturating_add_in_place(
+                ExecuteTimingType::ProgramCacheUs,
+                program_cache_time.as_us(),
+            );
+            execute_timings.saturating_add_in_place(ExecuteTimingType::LoadUs, load_time.as_us());
+            execute_timings
+                .saturating_add_in_place(ExecuteTimingType::ExecuteUs, execution_time.as_us());
+        }
 
         LoadAndExecuteSanitizedTransactionsOutput {
             error_metrics,
+            execute_timings,
             execution_results,
             loaded_transactions,
         }
@@ -390,10 +447,10 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         let compute_budget_limits = process_compute_budget_instructions(
             message.program_instructions_iter(),
         )
-        .map_err(|err| {
-            error_counters.invalid_compute_budget += 1;
-            err
-        })?;
+            .map_err(|err| {
+                error_counters.invalid_compute_budget += 1;
+                err
+            })?;
 
         let fee_payer_address = message.fee_payer();
         let Some(mut fee_payer_account) = callbacks.get_account_shared_data(fee_payer_address)
@@ -409,7 +466,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             fee_payer_address,
             &mut fee_payer_account,
         )
-        .rent_amount;
+            .rent_amount;
 
         let CheckedTransactionDetails {
             nonce,
@@ -540,7 +597,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                         self.slot,
                         false,
                     )
-                    .expect("called load_program_with_pubkey() with nonexistent account");
+                        .expect("called load_program_with_pubkey() with nonexistent account");
                     program.tx_usage_counter.store(count, Ordering::Relaxed);
                     (key, program)
                 });
@@ -640,7 +697,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                 false, /* deployment */
                 false, /* debugging_features */
             )
-            .unwrap();
+                .unwrap();
             let program_runtime_environment_v2 = create_program_runtime_environment_v2(
                 compute_budget,
                 false, /* debugging_features */
@@ -672,6 +729,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         &self,
         tx: &SanitizedTransaction,
         loaded_transaction: &mut LoadedTransaction,
+        execute_timings: &mut ExecuteTimings,
         error_metrics: &mut TransactionErrorMetrics,
         program_cache_for_tx_batch: &mut ProgramCacheForTxBatch,
         environment: &TransactionProcessingEnvironment,
@@ -746,15 +804,25 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             log_collector.clone(),
             compute_budget,
         );
-
+        #[cfg(feature = "timing")]
+        let mut process_message_time = Measure::start("process_message_time");
         let process_result = MessageProcessor::process_message(
             tx.message(),
             &loaded_transaction.program_indices,
             &mut invoke_context,
+            execute_timings,
             &mut executed_units,
         );
+        #[cfg(feature = "timing")]
+        process_message_time.stop();
 
         drop(invoke_context);
+
+        #[cfg(feature = "timing")]
+        saturating_add_assign!(
+            execute_timings.execute_accessories.process_message_us,
+            process_message_time.as_us()
+        );
 
         let mut status = process_result
             .and_then(|info| {
@@ -765,7 +833,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                     &post_account_state_info,
                     &transaction_context,
                 )
-                .map(|_| info)
+                    .map(|_| info)
             })
             .map_err(|err| {
                 match err {
@@ -807,15 +875,22 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
 
         if status.is_ok()
             && transaction_accounts_lamports_sum(&accounts, tx.message())
-                .filter(|lamports_after_tx| lamports_before_tx == *lamports_after_tx)
-                .is_none()
+            .filter(|lamports_after_tx| lamports_before_tx == *lamports_after_tx)
+            .is_none()
         {
             status = Err(TransactionError::UnbalancedTransaction);
         }
         let status = status.map(|_| ());
 
         loaded_transaction.accounts = accounts;
-
+        saturating_add_assign!(
+            execute_timings.details.total_account_count,
+            loaded_transaction.accounts.len() as u64
+        );
+        saturating_add_assign!(
+            execute_timings.details.changed_account_count,
+            touched_account_count
+        );
 
         let return_data = if config.recording_config.enable_return_data_recording
             && !return_data.data.is_empty()
@@ -1064,7 +1139,7 @@ mod tests {
                         instruction: CompiledInstruction::new_from_raw_parts(0, vec![6], vec![]),
                         stack_height: 2,
                     },
-                ]
+                ],
             ]
         );
     }
@@ -1114,6 +1189,7 @@ mod tests {
         let result = batch_processor.execute_loaded_transaction(
             &sanitized_transaction,
             &mut loaded_transaction,
+            &mut ExecuteTimings::default(),
             &mut TransactionErrorMetrics::default(),
             &mut program_cache_for_tx_batch,
             &processing_environment,
@@ -1134,6 +1210,7 @@ mod tests {
         let result = batch_processor.execute_loaded_transaction(
             &sanitized_transaction,
             &mut loaded_transaction,
+            &mut ExecuteTimings::default(),
             &mut TransactionErrorMetrics::default(),
             &mut program_cache_for_tx_batch,
             &processing_environment,
@@ -1142,11 +1219,11 @@ mod tests {
 
         let TransactionExecutionResult::Executed {
             details:
-                TransactionExecutionDetails {
-                    log_messages,
-                    inner_instructions,
-                    ..
-                },
+            TransactionExecutionDetails {
+                log_messages,
+                inner_instructions,
+                ..
+            },
             ..
         } = result
         else {
@@ -1162,6 +1239,7 @@ mod tests {
         let result = batch_processor.execute_loaded_transaction(
             &sanitized_transaction,
             &mut loaded_transaction,
+            &mut ExecuteTimings::default(),
             &mut TransactionErrorMetrics::default(),
             &mut program_cache_for_tx_batch,
             &processing_environment,
@@ -1170,11 +1248,11 @@ mod tests {
 
         let TransactionExecutionResult::Executed {
             details:
-                TransactionExecutionDetails {
-                    log_messages,
-                    inner_instructions,
-                    ..
-                },
+            TransactionExecutionDetails {
+                log_messages,
+                inner_instructions,
+                ..
+            },
             ..
         } = result
         else {
@@ -1237,6 +1315,7 @@ mod tests {
         let _ = batch_processor.execute_loaded_transaction(
             &sanitized_transaction,
             &mut loaded_transaction,
+            &mut ExecuteTimings::default(),
             &mut error_metrics,
             &mut program_cache_for_tx_batch,
             &TransactionProcessingEnvironment::default(),
@@ -1867,7 +1946,7 @@ mod tests {
             0;
             std::cmp::max(
                 0,
-                UpgradeableLoaderState::size_of_programdata_metadata().saturating_sub(header.len())
+                UpgradeableLoaderState::size_of_programdata_metadata().saturating_sub(header.len()),
             )
         ];
 
@@ -1967,7 +2046,7 @@ mod tests {
                     *fee_payer_address,
                     post_validation_fee_payer_account.clone(),
                     fee_payer_rent_debit,
-                    fee_payer_rent_epoch
+                    fee_payer_rent_epoch,
                 ),
                 compute_budget_limits,
                 fee_details: FeeDetails::new_for_tests(transaction_fee, priority_fee, false),
@@ -2238,7 +2317,7 @@ mod tests {
                 )),
                 &system_program::id(),
             )
-            .unwrap();
+                .unwrap();
 
             let mut mock_accounts = HashMap::new();
             mock_accounts.insert(*fee_payer_address, fee_payer_account.clone());
@@ -2299,7 +2378,7 @@ mod tests {
                 )),
                 &system_program::id(),
             )
-            .unwrap();
+                .unwrap();
 
             let mut mock_accounts = HashMap::new();
             mock_accounts.insert(*fee_payer_address, fee_payer_account.clone());

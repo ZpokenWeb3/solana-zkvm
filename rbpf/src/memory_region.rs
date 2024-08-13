@@ -633,7 +633,7 @@ impl<'a> AlignedMemoryMapping<'a> {
         let index = vm_addr
             .checked_shr(ebpf::VIRTUAL_ADDRESS_BITS as u32)
             .unwrap_or(0) as usize;
-        eprintln!("index: {:?}, vm_addr: {:?}", index, vm_addr);
+        // eprintln!("index: {:?}, vm_addr: {:?}", index, vm_addr);
         if (1..self.regions.len()).contains(&index) {
             let region = &self.regions[index];
             if access_type == AccessType::Load || ensure_writable_region(region, &self.cow_cb) {

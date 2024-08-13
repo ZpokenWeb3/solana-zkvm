@@ -15,8 +15,9 @@ pub mod transaction_processing_callback;
 pub mod transaction_processor;
 pub mod transaction_results;
 
-// #[macro_use]
-// extern crate solana_metrics;
+#[macro_use]
+#[cfg(feature = "metrics")]
+extern crate solana_metrics;
 
 #[cfg_attr(feature = "frozen-abi", macro_use)]
 #[cfg(feature = "frozen-abi")]

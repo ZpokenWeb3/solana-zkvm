@@ -21,15 +21,16 @@ solana-compute-budget = { workspace = true }
 solana-frozen-abi = { workspace = true, optional = true }
 solana-frozen-abi-macro = { workspace = true, optional = true }
 solana-loader-v4-program = { workspace = true }
+solana-measure = { workspace = true }
 solana-program-runtime = { workspace = true }
 solana-sdk = { workspace = true }
 solana-system-program = { workspace = true }
 solana-type-overrides = { workspace = true }
 solana-vote = { workspace = true }
-hex = "0.4.3"
+solana-metrics = {workspace = true, optional = true}
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["lib"]
 name = "solana_svm"
 
 [dev-dependencies]
@@ -45,9 +46,6 @@ solana-logger = { workspace = true }
 solana-sdk = { workspace = true, features = ["dev-context-only-utils"] }
 # See order-crates-for-publishing.py for using this unusual `path = "."`
 solana-svm = { path = ".", features = ["dev-context-only-utils"] }
-wasm-bindgen = "0.2.92"
-wasm-bindgen-test = "0.3.42"
-console_log = "1.0.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -58,6 +56,8 @@ rustc_version = { workspace = true }
 
 [features]
 dev-context-only-utils = []
+default = ["metrics"]
+metrics = ["solana-metrics"]
 frozen-abi = [
     "dep:solana-frozen-abi",
     "dep:solana-frozen-abi-macro",
@@ -71,3 +71,4 @@ shuttle-test = [
     "solana-bpf-loader-program/shuttle-test",
     "solana-loader-v4-program/shuttle-test",
 ]
+timing = []

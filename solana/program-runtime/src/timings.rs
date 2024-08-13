@@ -417,12 +417,14 @@ impl ExecuteDetailsTimings {
     pub fn accumulate_program(
         &mut self,
         program_id: &Pubkey,
-        us: u64,
+        us: Option<u64>,
         compute_units_consumed: u64,
         is_error: bool,
     ) {
         let program_timing = self.per_program_timings.entry(*program_id).or_default();
-        program_timing.accumulated_us = program_timing.accumulated_us.saturating_add(us);
+        #[cfg(feature = "timing")]{
+            program_timing.accumulated_us = program_timing.accumulated_us.saturating_add(us);
+        }
         if is_error {
             program_timing
                 .errored_txs_compute_consumed
@@ -445,7 +447,7 @@ mod tests {
 
     fn construct_execute_timings_with_program(
         program_id: &Pubkey,
-        us: u64,
+        us: Option<u64>,
         compute_units_consumed: u64,
     ) -> ExecuteDetailsTimings {
         let mut execute_details_timings = ExecuteDetailsTimings::default();
@@ -492,7 +494,7 @@ mod tests {
         let program_id = Pubkey::new_unique();
         let us = 100;
         let compute_units_consumed = 1;
-        construct_execute_timings_with_program(&program_id, us, compute_units_consumed);
+        construct_execute_timings_with_program(&program_id, Some(us), compute_units_consumed);
     }
 
     #[test]
@@ -505,7 +507,7 @@ mod tests {
 
         // Construct another separate instance of ExecuteDetailsTimings with non default fields
         let mut other_execute_details_timings =
-            construct_execute_timings_with_program(&program_id, us, compute_units_consumed);
+            construct_execute_timings_with_program(&program_id, Some(us), compute_units_consumed);
         let account_count = 1;
         other_execute_details_timings.serialize_us = us;
         other_execute_details_timings.create_vm_us = us;
