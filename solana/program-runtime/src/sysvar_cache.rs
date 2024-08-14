@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 #[allow(deprecated)]
 use solana_sdk::sysvar::{fees::Fees, recent_blockhashes::RecentBlockhashes};
 use {
@@ -25,7 +26,7 @@ impl ::solana_frozen_abi::abi_example::AbiExample for SysvarCache {
     }
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct SysvarCache {
     // full account data as provided by bank, including any trailing zero bytes
     clock: Option<Vec<u8>>,

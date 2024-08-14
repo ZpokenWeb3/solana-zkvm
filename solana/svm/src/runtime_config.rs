@@ -1,3 +1,4 @@
+use serde_derive::{Deserialize, Serialize};
 use solana_compute_budget::compute_budget::ComputeBudget;
 
 #[cfg(all(RUSTC_WITH_SPECIALIZATION, feature = "frozen-abi"))]
@@ -9,7 +10,7 @@ impl ::solana_frozen_abi::abi_example::AbiExample for RuntimeConfig {
 }
 
 /// Encapsulates flags that can be used to tweak the runtime behavior.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct RuntimeConfig {
     pub compute_budget: Option<ComputeBudget>,
     pub log_messages_bytes_limit: Option<usize>,

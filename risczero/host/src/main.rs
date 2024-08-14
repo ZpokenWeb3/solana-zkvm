@@ -9,6 +9,7 @@ use risc0_zkvm::{default_prover, ExecutorEnv};
 use methods::{
     CUSTOM_METHOD_ELF, CUSTOM_METHOD_ID
 };
+use svm_core::solana_simulator::SolanaSimulator;
 
 fn load_program(name: String) -> Vec<u8> {
     // Loading the program file
@@ -43,42 +44,15 @@ fn main() {
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
 
-    // An executor environment describes the configurations for the zkVM
-    // including program inputs.
-    // An default ExecutorEnv can be created like so:
-    // `let env = ExecutorEnv::builder().build().unwrap();`
-    // However, this `env` does not have any inputs.
-    //
-    // To add guest input to the executor environment, use
-    // ExecutorEnvBuilder::write().
-    // To access this method, you'll need to use ExecutorEnv::builder(), which
-    // creates an ExecutorEnvBuilder. When you're done adding input, call
-    // ExecutorEnvBuilder::build().
-    //
-    // let buffer = load_program("hello-solana".to_string());
-
-    // For example:
-    // let input: Vec<u8> = buffer;
-    // let time_now: i64 = SystemTime::now()
-    //     .duration_since(UNIX_EPOCH)
-    //     .expect("Time went backwards")
-    //     .as_secs() as i64;
-
     let tx = load_versioned_tx_from_json("hello-solana".to_string()).unwrap();
-
+    let solana_simulator = SolanaSimulator::default();
     let env = ExecutorEnv::builder()
         .write(&tx)
         .unwrap()
+        .write(&solana_simulator)
+        .unwrap()
         .build()
         .unwrap();
-
-    // let env = ExecutorEnv::builder()
-    //     .write(&input)
-    //     .unwrap()
-    //     .write(&time_now)
-    //     .unwrap()
-    //     .build()
-    //     .unwrap();
 
     // Obtain the default prover.
     let prover = default_prover();

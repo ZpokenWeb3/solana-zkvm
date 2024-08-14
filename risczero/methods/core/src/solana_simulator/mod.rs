@@ -40,6 +40,12 @@ use solana_svm::runtime_config::RuntimeConfig;
 use crate::solana_simulator::error::Error;
 use crate::types::{BUILTINS, TransactionSimulationResult};
 
+use serde::Serialize;
+use serde::Deserialize;
+use serde::Serializer;
+use serde::de::{self, Deserializer, Visitor};
+use std::fmt;
+
 
 #[cfg(feature = "async_enabled")]
 use {
@@ -51,11 +57,14 @@ use {
 mod utils;
 mod error;
 
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SolanaSimulator {
     runtime_config: RuntimeConfig,
     feature_set: Arc<FeatureSet>,
     accounts_db: BTreeMap<Pubkey, AccountSharedData>,
     sysvar_cache: SysvarCache,
+    #[serde(serialize_with = "serialize_keypair", deserialize_with = "deserialize_keypair")]
     payer: Keypair,
 }
 
@@ -66,14 +75,42 @@ impl Default for SolanaSimulator {
         sysvar_cache.set_sysvar(&Clock::default());
         sysvar_cache.set_sysvar(&Rent::default());
 
+        let compute_units = 1_400_000;
+        let heap_size = 256 * 1024;
+
+        let mut compute_budget = ComputeBudget::new(compute_units);
+        compute_budget.heap_size = heap_size;
+
+        let runtime_config = RuntimeConfig {
+            compute_budget: Some(compute_budget),
+            log_messages_bytes_limit: Some(100 * 1024),
+            transaction_account_lock_limit: None,
+        };
+
         SolanaSimulator {
-            runtime_config: RuntimeConfig::default(),
+            runtime_config: runtime_config,
             feature_set: Arc::new(FeatureSet::default()),
             accounts_db: BTreeMap::new(),
             sysvar_cache,
             payer: Keypair::new(),
         }
     }
+}
+
+fn serialize_keypair<S>(payer: &Keypair, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let base58_keypair = payer.to_base58_string();
+    base58_keypair.serialize(serializer)
+}
+
+fn deserialize_keypair<'de, D>(deserializer: D) -> Result<Keypair, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let base58_keypair = String::deserialize(deserializer)?;
+    Ok(Keypair::from_base58_string(&base58_keypair))
 }
 
 impl SolanaSimulator {
