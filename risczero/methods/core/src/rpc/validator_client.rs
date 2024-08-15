@@ -1,6 +1,3 @@
-
-
-use super::Rpc;
 use async_trait::async_trait;
 use solana_account_decoder::{UiAccount, UiAccountEncoding};
 use solana_client::{
@@ -17,8 +14,17 @@ use solana_sdk::{
 };
 use std::{error::Error, ops::Deref, time::Duration};
 use std::{future::Future, sync::Arc};
-use tracing::debug;
+use std::pin::Pin;
+use log::info;
+use serde::Deserialize;
+use serde_json::json;
+use solana_client::rpc_config::RpcTransactionConfig;
+use solana_sdk::commitment_config::CommitmentConfig;
+use solana_sdk::signature::Signature;
+use solana_sdk::transaction::VersionedTransaction;
+use solana_transaction_status::{EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction, UiTransactionEncoding};
 use crate::rpc::config::{APIOptions, Config};
+use crate::rpc::Rpc;
 
 fn should_retry(e: &ClientError) -> bool {
     let ClientErrorKind::Reqwest(reqwest_error) = e.kind() else {
@@ -51,7 +57,7 @@ fn should_retry(e: &ClientError) -> bool {
 async fn with_retries<F, Fut, R>(max_retries: usize, request: F) -> ClientResult<R>
 where
     F: Fn() -> Fut,
-    Fut: Future<Output = ClientResult<R>>,
+    Fut: Future<Output=ClientResult<R>>,
 {
     for _ in 0..max_retries {
         match request().await {
@@ -80,7 +86,6 @@ impl CloneRpcClient {
     pub fn new_from_config(config: &Config) -> Self {
         let url = config.json_rpc_url.clone();
         let commitment = config.commitment;
-
         let rpc_client = RpcClient::new_with_commitment(url, commitment);
         Self {
             rpc: Arc::new(rpc_client),
@@ -112,7 +117,7 @@ impl Deref for CloneRpcClient {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait(? Send)]
 impl Rpc for CloneRpcClient {
     async fn get_account(&self, key: &Pubkey) -> ClientResult<Option<Account>> {
         let request = || {
@@ -123,6 +128,7 @@ impl Rpc for CloneRpcClient {
                 min_context_slot: None,
             };
             let params = serde_json::json!([key.to_string(), config]);
+            info!("GET ACCOUNT PARAMS: {:?}", params);
 
             self.send(RpcRequest::GetAccountInfo, params)
         };
@@ -144,10 +150,10 @@ impl Rpc for CloneRpcClient {
 
         if pubkeys.len() == 1 {
             let account = Rpc::get_account(self, &pubkeys[0]).await?;
-            debug!(
-                "get_multiple_accounts: single account pubkey={} account={:?}",
-                pubkeys[0], account
-            );
+            // debug!(
+            //     "get_multiple_accounts: single account pubkey={} account={:?}",
+            //     pubkeys[0], account
+            // );
             return Ok(vec![account]);
         }
 
@@ -156,10 +162,10 @@ impl Rpc for CloneRpcClient {
             let request = || self.rpc.get_multiple_accounts(chunk);
 
             let mut accounts = with_retries(self.max_retries, request).await?;
-            debug!(
-                "get_multiple_accounts: chunk pubkey={:?} account={:?}",
-                chunk, accounts
-            );
+            // debug!(
+            //     "get_multiple_accounts: chunk pubkey={:?} account={:?}",
+            //     chunk, accounts
+            // );
             result.append(&mut accounts);
         }
 
@@ -211,9 +217,9 @@ impl Rpc for CloneRpcClient {
             }
         }
 
-        for feature in &result {
-            debug!("Deactivated feature: {}", feature);
-        }
+        // for feature in &result {
+        //     debug!("Deactivated feature: {}", feature);
+        // }
 
         cache.replace(Cache {
             data: result.clone(),
@@ -222,5 +228,20 @@ impl Rpc for CloneRpcClient {
         drop(cache);
 
         Ok(result)
+    }
+
+    async fn get_transaction(&self, signature: &Signature) -> ClientResult<Option<VersionedTransaction>>
+    {
+        let config = RpcTransactionConfig {
+            encoding: Some(UiTransactionEncoding::Base64),
+            commitment: Some(self.commitment()),
+            max_supported_transaction_version: Some(0),
+        };
+        let tx = self.rpc.get_transaction_with_config(
+            &signature,
+            config,
+        ).await.unwrap();
+
+        Ok(tx.transaction.transaction.decode())
     }
 }

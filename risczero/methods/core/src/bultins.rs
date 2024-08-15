@@ -1,34 +1,9 @@
-
-// pub struct SimulateSolanaRequest {
-//     pub compute_units: Option<u64>,
-//     pub heap_size: Option<u32>,
-//     pub account_limit: Option<usize>,
-//     pub verify: Option<bool>,
-//     #[serde_as(as = "Hex")]
-//     pub blockhash: [u8; 32],
-//     #[serde_as(as = "Vec<Hex>")]
-//     pub transactions: Vec<Vec<u8>>,
-//     pub id: Option<String>,
-// }
-
 use solana_program::{bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable};
 use solana_program::pubkey::Pubkey;
 use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
 use solana_sdk::feature_set;
-use solana_sdk::inner_instruction::InnerInstructions;
-use solana_sdk::transaction_context::{TransactionAccount, TransactionReturnData};
-use solana_svm::transaction_processor::TransactionLogMessages;
 
-use solana_sdk::transaction::Result;
 
-pub struct TransactionSimulationResult {
-    pub result: Result<()>,
-    pub logs: Option<TransactionLogMessages>,
-    pub post_simulation_accounts: Vec<TransactionAccount>,
-    pub units_consumed: u64,
-    pub return_data: Option<TransactionReturnData>,
-    pub inner_instructions: Option<Vec<InnerInstructions>>,
-}
 
 /// Identifies the type of built-in program targeted for Core BPF migration.
 /// The type of target determines whether the program should have a program

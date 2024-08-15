@@ -9,6 +9,8 @@ use risc0_zkvm::{default_prover, ExecutorEnv};
 use methods::{
     CUSTOM_METHOD_ELF, CUSTOM_METHOD_ID
 };
+use solana_sdk::account::Account;
+use solana_sdk::pubkey::Pubkey;
 use svm_core::solana_simulator::SolanaSimulator;
 
 fn load_program(name: String) -> Vec<u8> {
@@ -37,20 +39,37 @@ fn load_versioned_tx_from_json(name: String) -> Result<Vec<u8>, Box<dyn std::err
 }
 
 
-
-fn main() {
+#[tokio::main]
+async fn main() {
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
 
-    let tx = load_versioned_tx_from_json("hello-solana".to_string()).unwrap();
-    let solana_simulator = SolanaSimulator::default();
+    let tx = load_versioned_tx_from_json("solana".to_string()).unwrap();
+    // let mut solana_simulator = SolanaSimulator::default();
+    // let mut storable_accounts: Vec<(&Pubkey, &Account)> = vec![];
+    //
+    // let dir = "pubkey_owner.bin";
+    // let mut file = File::open(dir).unwrap();
+    // let mut read_bytes = Vec::new();
+    // file.read_to_end(&mut read_bytes).unwrap();
+    // let pubkey: Pubkey = bincode::deserialize(&read_bytes).unwrap();
+    //
+    // let dir = "account_owner.bin";
+    // let mut file = File::open(dir).unwrap();
+    // let mut read_bytes = Vec::new();
+    // file.read_to_end(&mut read_bytes).unwrap();
+    // let account: Account = bincode::deserialize(&read_bytes).unwrap();
+    //
+    // storable_accounts.push((&pubkey, &account));
+    // solana_simulator.set_multiple_accounts(&storable_accounts);
+
     let env = ExecutorEnv::builder()
         .write(&tx)
         .unwrap()
-        .write(&solana_simulator)
-        .unwrap()
+        // .write(&solana_simulator)
+        // .unwrap()
         .build()
         .unwrap();
 

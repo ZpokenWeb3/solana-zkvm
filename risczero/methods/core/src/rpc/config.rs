@@ -5,7 +5,6 @@ use solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature:
 
 #[derive(Debug)]
 pub struct Config {
-    pub evm_loader: Pubkey,
     pub key_for_config: Pubkey,
     pub fee_payer: Option<Keypair>,
     pub commitment: CommitmentConfig,
@@ -21,10 +20,11 @@ pub struct APIOptions {
     pub solana_url: String,
     pub solana_timeout: u64,
     pub solana_max_retries: usize,
-    pub evm_loader: Pubkey,
     pub key_for_config: Pubkey,
 }
 
+/// # Errors
+#[must_use]
 pub fn load_api_config_from_environment() -> APIOptions {
     let solana_cli_config_path: Option<String> =
         env::var("SOLANA_CLI_CONFIG_PATH").map(Some).unwrap_or(None);
@@ -47,11 +47,6 @@ pub fn load_api_config_from_environment() -> APIOptions {
         .parse()
         .expect("SOLANA_MAX_RETRIES variable must be a valid number");
 
-    let evm_loader = env::var("EVM_LOADER")
-        .ok()
-        .and_then(|v| Pubkey::from_str(&v).ok())
-        .expect("EVM_LOADER variable must be a valid pubkey");
-
     let key_for_config = env::var("SOLANA_KEY_FOR_CONFIG")
         .ok()
         .and_then(|v| Pubkey::from_str(&v).ok())
@@ -63,7 +58,62 @@ pub fn load_api_config_from_environment() -> APIOptions {
         solana_url,
         solana_timeout,
         solana_max_retries,
-        evm_loader,
         key_for_config,
     }
+}
+
+
+/// # Panics
+/// # Errors
+/// `EvmLoaderNotSpecified` - if `evm_loader` is not specified
+/// `KeypairNotSpecified` - if `signer` is not specified
+pub fn create(options: &ArgMatches) -> Result<Config, NeonError> {
+    let solana_cli_config = options
+        .value_of("config_file")
+        .map_or_else(solana_cli_config::Config::default, |config_file| {
+            solana_cli_config::Config::load(config_file).unwrap_or_default()
+        });
+
+    let commitment =
+        CommitmentConfig::from_str(options.value_of("commitment").unwrap_or("confirmed")).unwrap();
+
+    let json_rpc_url = normalize_to_url_if_moniker(
+        options
+            .value_of("json_rpc_url")
+            .unwrap_or(&solana_cli_config.json_rpc_url),
+    );
+
+    let keypair_path: String = options
+        .value_of("keypair")
+        .unwrap_or(&solana_cli_config.keypair_path)
+        .to_owned();
+
+    let fee_payer = keypair_from_path(
+        options,
+        options
+            .value_of("fee_payer")
+            .unwrap_or(&solana_cli_config.keypair_path),
+        "fee_payer",
+        true,
+    )
+        .ok();
+
+    let key_for_config = if let Some(key_for_config) = pubkey_of(options, "solana_key_for_config") {
+        key_for_config
+    } else {
+        fee_payer
+            .as_ref()
+            .map(Keypair::pubkey)
+            .ok_or(NeonError::SolanaKeyForConfigNotSpecified)?
+    };
+
+
+    Ok(Config {
+        key_for_config,
+        fee_payer,
+        commitment,
+        solana_cli_config,
+        json_rpc_url,
+        keypair_path,
+    })
 }

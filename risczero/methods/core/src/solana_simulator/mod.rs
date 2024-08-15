@@ -36,9 +36,7 @@ use solana_svm::account_loader::construct_instructions_account;
 use solana_svm::message_processor::MessageProcessor;
 use solana_svm::runtime_config::RuntimeConfig;
 
-
-use crate::solana_simulator::error::Error;
-use crate::types::{BUILTINS, TransactionSimulationResult};
+use crate::bultins::{BUILTINS};
 
 use serde::Serialize;
 use serde::Deserialize;
@@ -49,13 +47,14 @@ use std::fmt;
 
 #[cfg(feature = "async_enabled")]
 use {
-    svm_client::rpc::Rpc,
     crate::solana_simulator::utils::SyncState,
     log::debug,
+    crate::rpc::Rpc,
 };
+use solana_simulator_types::result::TransactionSimulationResult;
+use solana_simulator_types::simulator_error::Error;
 
 mod utils;
-mod error;
 
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -88,7 +87,7 @@ impl Default for SolanaSimulator {
         };
 
         SolanaSimulator {
-            runtime_config: runtime_config,
+            runtime_config,
             feature_set: Arc::new(FeatureSet::default()),
             accounts_db: BTreeMap::new(),
             sysvar_cache,
@@ -150,12 +149,11 @@ impl SolanaSimulator {
         Ok(Self {
             runtime_config,
             feature_set: Arc::new(feature_set),
-            accounts_db: BTreeMap::new(),
+            accounts_db: HashMap::new(),
             sysvar_cache,
             payer: Keypair::new(),
         })
     }
-
 
     #[cfg(feature = "async_enabled")]
     pub async fn sync_accounts(&mut self, rpc: &impl Rpc, keys: &[Pubkey]) -> Result<(), Error> {

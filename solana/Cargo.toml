@@ -496,6 +496,7 @@ crossbeam-epoch = { git = "https://github.com/anza-xyz/crossbeam", rev = "fd279d
 # comments and the overrides in sync.
 solana-curve25519 = { path = "curves/curve25519" }
 solana-program = { path = "sdk/program" }
+solana-sdk = {path = "sdk"}
 solana-zk-sdk = { path = "zk-sdk" }
 solana-zk-token-sdk = { path = "zk-token-sdk" }
 
@@ -533,8 +534,13 @@ git = "https://github.com/anza-xyz/curve25519-dalek.git"
 rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
 
 [patch.crates-io.ed25519-dalek]
-git = "https://github.com/staaason/ed25519-dalek.git"
-rev = "91938d89eb5ca4a141d6fda1d1db11aebadc4388"
+path = "../ed25519-dalek"
+#
+#[patch.crates-io.zeroize]
+#version = "=1.3.0"
+#[patch.crates-io.ed25519-dalek]
+#git = "https://github.com/staaason/ed25519-dalek.git"
+#rev = "91938d89eb5ca4a141d6fda1d1db11aebadc4388"
 
 # Solana RPC nodes experience stalls when running with `tokio` containing this
 # commit:

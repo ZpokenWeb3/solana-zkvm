@@ -42,8 +42,8 @@ use {
     },
 };
 use solana_sdk::transaction::VersionedTransaction;
-use crate::mock_bank::MockBankCallback;
-use crate::transaction_builder::SanitizedTransactionBuilder;
+use crate::mock_simulator::mock_bank::MockBankCallback;
+use crate::mock_simulator::transaction_builder::SanitizedTransactionBuilder;
 
 const BPF_LOADER_NAME: &str = "solana_bpf_loader_upgradeable_program";
 const SYSTEM_PROGRAM_NAME: &str = "system_program";
@@ -332,45 +332,4 @@ fn get_transaction(program: Vec<u8>) -> VersionedTransaction{
         fee_payer);
     println!("Check results: {:?}, transactions: {:?}", check_results, transactions);
     transactions.first().unwrap().to_versioned_transaction()
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{env, fs};
-    use std::fs::File;
-    use std::io::{BufReader, Read, Write};
-    use solana_program::message::VersionedMessage;
-    use solana_sdk::transaction::VersionedTransaction;
-    use crate::integration::get_transaction;
-
-    fn load_program(name: String) -> Vec<u8> {
-        // Loading the program file
-        let mut dir = env::current_dir().unwrap();
-        dir.pop();
-        dir.pop();
-        dir.push("host");
-        dir.push("example-programs");
-        let name = name.replace('-', "_");
-        dir.push(name + "_program.so");
-        println!("Dir: {:?}", dir.to_str());
-        let mut file = File::open(dir.clone()).expect("file not found");
-        let metadata = fs::metadata(dir).expect("Unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("Buffer overflow");
-        buffer
-    }
-
-    #[test]
-    fn test_hex_encode_tx() {
-        let buffer = load_program("hello-solana".to_string());
-        let transaction = get_transaction(buffer);
-        let verify = transaction.verify_and_hash_message().unwrap();
-        // let bytes = bincode::serialize(&transaction).unwrap();
-        // let tx_from_bytes: VersionedTransaction = bincode::deserialize(&bytes).unwrap();
-        // let mut file = File::create("hello_solana_transaction.bin").unwrap();
-        // file.write_all(&bytes).unwrap();
-        // assert_eq!(transaction, tx_from_bytes);
-        println!("TRANSACTION: {:?}", transaction);
-
-    }
 }

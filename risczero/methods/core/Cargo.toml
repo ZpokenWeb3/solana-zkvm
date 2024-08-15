@@ -11,24 +11,24 @@ solana-program-runtime = { path = "../../../solana/program-runtime", version = "
 solana-compute-budget = { path = "../../../solana/compute-budget", version = "=2.0.3", default-features = false }
 solana-bpf-loader-program = { path = "../../../solana/programs/bpf_loader", version = "=2.0.3", default-features = false }
 solana-system-program = { path = "../../../solana/programs/system", version = "=2.0.3", default-features = false }
-svm-client = { path = "client", optional = true }
-solana-client = { path = "../../../solana/client", optional = true }
+solana-client = { path = "../../../solana/client", version = "=2.0.3", optional = true }
 solana-loader-v4-program = { path = "../../../solana/programs/loader-v4", version = "=2.0.3" }
 solana-compute-budget-program = { path = "../../../solana/programs/compute-budget", version = "=2.0.3" }
-solana-address-lookup-table-program = { path = "../../../solana/programs/address-lookup-table", version = "=2.0.3" }
+solana-address-lookup-table-program = { path = "../../../solana/programs/address-lookup-table", version = "=2.0.3"}
+solana-account-decoder = { path = "../../../solana/account-decoder", version = "=2.0.3", optional = true}
 bincode = "1.3.3"
 serde = { version = "1.0.204", features = ["derive"] }
 base64 = "0.22.1"
 thiserror = "1.0.63"
 hex = "0.4.3"
 async-trait = "0.1.81"
-log = "0.4.22"
 serde_json = "1.0.117"
-
-#solana-stake-program = { path = "../../../solana/programs/stake", version = "=2.0.3", optional = true }
-#solana-vote-program = { path = "../../../solana/programs/vote", version = "=2.0.3", optional = true }
-#solana-inline-spl = { path = "../../../solana/inline-spl", version = "=2.0.3", optional = true }
-#solana-client = {path = "../../../solana/client", version = "=2.0.3", optional = true}
+solana-simulator-types = {path = "types"}
+serde_with = { version = "3.9", features = ["hex"] }
+enum_dispatch = "0.3.13"
+tokio = { version = "1.39.2", optional = true }
+solana-transaction-status = { path = "../../../solana/transaction-status", version = "=2.0.3", optional = true}
+hyper = { version = "0.14.29", optional = true }
 
 [dev-dependencies]
 wasm-bindgen = "0.2.92"
@@ -39,7 +39,14 @@ serde_json = "1.0.117"
 serde = { version = "1.0.204", features = ["derive"] }
 
 [features]
-async_enabled = ["svm-client", "solana-client"]
+async_enabled = [
+    "solana-client",
+    "solana-account-decoder",
+#    "solana-address-lookup-table-program",
+    "tokio",
+    "solana-transaction-status",
+    "hyper"
+]
 
 [patch.crates-io.curve25519-dalek]
 git = "https://github.com/anza-xyz/curve25519-dalek.git"

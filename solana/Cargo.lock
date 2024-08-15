@@ -1993,12 +1993,10 @@ dependencies = [
 [[package]]
 name = "ed25519-dalek"
 version = "1.0.1"
-source = "git+https://github.com/staaason/ed25519-dalek.git?rev=91938d89eb5ca4a141d6fda1d1db11aebadc4388#91938d89eb5ca4a141d6fda1d1db11aebadc4388"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
- "getrandom 0.2.15",
- "rand 0.8.5",
+ "rand 0.7.3",
  "serde",
  "sha2 0.9.9",
  "zeroize",

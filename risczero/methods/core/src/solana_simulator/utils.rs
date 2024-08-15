@@ -1,18 +1,17 @@
-use log::debug;
 use solana_program::{address_lookup_table, bpf_loader_upgradeable, sysvar};
 use solana_program::address_lookup_table::state::{AddressLookupTable, LookupTableMeta};
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::account::Account;
 use solana_sdk::account_utils::StateMut;
-use crate::solana_simulator::error::Error;
 
 #[cfg(feature = "async_enabled")]
 use {
-    svm_client::rpc::Rpc,
-    solana_program_runtime::sysvar_cache::SysvarCache
+    crate::rpc::Rpc,
+    solana_program_runtime::sysvar_cache::SysvarCache,
 };
 
+use solana_simulator_types::simulator_error::Error;
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum SyncState {
@@ -35,7 +34,6 @@ pub async fn sync_sysvar_accounts(
         match key {
             sysvar::clock::ID => {
                 use sysvar::clock::Clock;
-
                 let clock: Clock = bincode::deserialize(&account.data)?;
                 sysvar_cache.set_clock(clock);
             }
@@ -123,9 +121,9 @@ pub fn reset_program_data_slot(account: &mut Account) -> Result<(), Error> {
         return Err(Error::ProgramAccountError);
     };
 
-    debug!(
-        "slot_before_update: slot={slot} upgrade_authority_address={upgrade_authority_address:?}"
-    );
+    // debug!(
+    //     "slot_before_update: slot={slot} upgrade_authority_address={upgrade_authority_address:?}"
+    // );
 
     let new_state = UpgradeableLoaderState::ProgramData {
         slot: 0,
@@ -133,9 +131,9 @@ pub fn reset_program_data_slot(account: &mut Account) -> Result<(), Error> {
     };
     account.set_state(&new_state)?;
 
-    debug!(
-        "slot_after_update: slot={slot} upgrade_authority_address={upgrade_authority_address:?}"
-    );
+    // debug!(
+    //     "slot_after_update: slot={slot} upgrade_authority_address={upgrade_authority_address:?}"
+    // );
 
     Ok(())
 }
