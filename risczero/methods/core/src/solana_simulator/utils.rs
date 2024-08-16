@@ -115,8 +115,8 @@ pub fn reset_program_data_slot(account: &mut Account) -> Result<(), Error> {
     assert_eq!(account.owner, bpf_loader_upgradeable::id());
 
     let UpgradeableLoaderState::ProgramData {
-        slot,
         upgrade_authority_address,
+        ..
     } = account.state()?
     else {
         return Err(Error::ProgramAccountError);

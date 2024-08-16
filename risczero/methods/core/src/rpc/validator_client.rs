@@ -128,7 +128,6 @@ impl Rpc for CloneRpcClient {
                 min_context_slot: None,
             };
             let params = serde_json::json!([key.to_string(), config]);
-            info!("GET ACCOUNT PARAMS: {:?}", params);
 
             self.send(RpcRequest::GetAccountInfo, params)
         };

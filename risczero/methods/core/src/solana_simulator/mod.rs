@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 use std::sync::Arc;
-
+use std::borrow::Borrow;
+use std::cell::Ref;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
@@ -347,16 +348,13 @@ impl SolanaSimulator {
             status = Err(TransactionError::UnbalancedTransaction);
         }
 
-        let logs = Rc::try_unwrap(log_collector)
-            .map(|log_collector| log_collector.into_inner().into_messages())
-            .ok();
+        let logs = Rc::try_unwrap(log_collector).unwrap_err().borrow_mut().get_recorded_content().to_vec();
 
         let return_data = if return_data.data.is_empty() {
             None
         } else {
             Some(return_data)
         };
-        println!("EXECUTION RESULT: {:?}", status.is_ok());
 
         Ok(TransactionSimulationResult {
             result: status,

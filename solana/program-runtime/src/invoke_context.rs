@@ -561,6 +561,7 @@ impl<'a> InvokeContext<'a> {
             return Err(InstructionError::BuiltinProgramsMustConsumeComputeUnits);
         }
 
+
         #[cfg(feature = "timing")]
         saturating_add_assign!(
             timings

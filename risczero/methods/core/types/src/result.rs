@@ -33,13 +33,13 @@ pub struct SimulateSolanaResponse {
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct SimulateSolanaTransactionResult {
     pub error: Option<solana_sdk::transaction::TransactionError>,
-    pub logs: Option<Vec<String>>,
+    pub logs: Vec<String>,
     pub executed_units: u64,
 }
 
 pub struct TransactionSimulationResult {
     pub result: solana_sdk::transaction::Result<()>,
-    pub logs: Option<TransactionLogMessages>,
+    pub logs: TransactionLogMessages,
     pub post_simulation_accounts: Vec<TransactionAccount>,
     pub units_consumed: u64,
     pub return_data: Option<TransactionReturnData>,
