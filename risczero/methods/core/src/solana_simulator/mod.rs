@@ -11,12 +11,10 @@ use solana_program::address_lookup_table::state::AddressLookupTable;
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
 use solana_program::clock::{Clock, Slot};
 use solana_program::fee_calculator::DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
-use solana_program::hash::Hash;
 use solana_program::instruction::{CompiledInstruction, TRANSACTION_LEVEL_STACK_HEIGHT};
 use solana_program::loader_v4::{LoaderV4State, LoaderV4Status};
 use solana_program::message::{AddressLoader, AddressLoaderError, SanitizedMessage};
 use solana_program::message::v0::{LoadedAddresses, MessageAddressTableLookup};
-use solana_program::pubkey::Pubkey;
 use solana_program::sysvar::{Sysvar, SysvarId};
 use solana_program_runtime::invoke_context::{EnvironmentConfig, InvokeContext};
 use solana_program_runtime::loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType, ProgramCacheForTxBatch, ProgramRuntimeEnvironments};
@@ -36,6 +34,9 @@ use solana_svm::account_loader::construct_instructions_account;
 use solana_svm::message_processor::MessageProcessor;
 use solana_svm::runtime_config::RuntimeConfig;
 
+use solana_sdk::pubkey::Pubkey;
+use solana_program::hash::Hash;
+
 use crate::bultins::{BUILTINS};
 
 use serde::Serialize;
@@ -43,8 +44,7 @@ use serde::Deserialize;
 use serde::Serializer;
 use serde::de::{self, Deserializer, Visitor};
 use std::fmt;
-
-
+use bincode::Options;
 #[cfg(feature = "async_enabled")]
 use {
     crate::solana_simulator::utils::SyncState,
@@ -54,7 +54,7 @@ use {
 use solana_simulator_types::result::TransactionSimulationResult;
 use solana_simulator_types::simulator_error::Error;
 
-mod utils;
+pub(crate) mod utils;
 
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -139,8 +139,8 @@ impl SolanaSimulator {
 
         let mut sysvar_cache = SysvarCache::default();
 
-        sysvar_cache.set_rent(Rent::default());
-        sysvar_cache.set_clock(Clock::default());
+        sysvar_cache.set_sysvar(&Rent::default());
+        sysvar_cache.set_sysvar(&Clock::default());
 
         if sync_state == SyncState::Yes {
             utils::sync_sysvar_accounts(rpc, &mut sysvar_cache).await?;
@@ -149,7 +149,7 @@ impl SolanaSimulator {
         Ok(Self {
             runtime_config,
             feature_set: Arc::new(feature_set),
-            accounts_db: HashMap::new(),
+            accounts_db: BTreeMap::new(),
             sysvar_cache,
             payer: Keypair::new(),
         })
@@ -356,6 +356,7 @@ impl SolanaSimulator {
         } else {
             Some(return_data)
         };
+        println!("EXECUTION RESULT: {:?}", status.is_ok());
 
         Ok(TransactionSimulationResult {
             result: status,

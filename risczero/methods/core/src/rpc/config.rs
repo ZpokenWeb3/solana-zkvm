@@ -1,7 +1,15 @@
+use clap::ArgMatches;
+use solana_clap_utils::{
+    input_parsers::pubkey_of, input_validators::normalize_to_url_if_moniker,
+    keypair::keypair_from_path,
+};
+use solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair};
 use std::{env, str::FromStr};
-
 use serde::{Deserialize, Serialize};
-use solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Keypair};
+use solana_sdk::signer::Signer;
+use solana_simulator_types::error::NeonError;
+use solana_sdk::pubkey::Pubkey;
+use crate::rpc::{CloneRpcClient, RpcEnum};
 
 #[derive(Debug)]
 pub struct Config {
@@ -116,4 +124,8 @@ pub fn create(options: &ArgMatches) -> Result<Config, NeonError> {
         json_rpc_url,
         keypair_path,
     })
+}
+
+pub async fn build_rpc(config: &Config) -> Result<RpcEnum, NeonError> {
+    Ok(RpcEnum::CloneRpcClient(CloneRpcClient::new_from_config(config)))
 }

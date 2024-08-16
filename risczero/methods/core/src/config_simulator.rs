@@ -8,6 +8,7 @@ use solana_simulator_types::result::NeonResult;
 
 use crate::rpc::CloneRpcClient;
 use crate::solana_simulator::SolanaSimulator;
+use crate::rpc::RpcEnum;
 
 
 #[allow(clippy::large_enum_variant)]

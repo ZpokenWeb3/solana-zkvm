@@ -1,9 +1,10 @@
 use solana_program::{address_lookup_table, bpf_loader_upgradeable, sysvar};
 use solana_program::address_lookup_table::state::{AddressLookupTable, LookupTableMeta};
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
-use solana_program::pubkey::Pubkey;
 use solana_sdk::account::Account;
 use solana_sdk::account_utils::StateMut;
+use solana_sdk::pubkey::Pubkey;
+
 
 #[cfg(feature = "async_enabled")]
 use {
@@ -35,57 +36,57 @@ pub async fn sync_sysvar_accounts(
             sysvar::clock::ID => {
                 use sysvar::clock::Clock;
                 let clock: Clock = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_clock(clock);
+                sysvar_cache.set_sysvar(&clock);
             }
             sysvar::epoch_rewards::ID => {
                 use sysvar::epoch_rewards::EpochRewards;
 
                 let epoch_rewards: EpochRewards = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_epoch_rewards(epoch_rewards);
+                sysvar_cache.set_sysvar(&epoch_rewards);
             }
             sysvar::epoch_schedule::ID => {
                 use sysvar::epoch_schedule::EpochSchedule;
 
                 let epoch_schedule: EpochSchedule = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_epoch_schedule(epoch_schedule);
+                sysvar_cache.set_sysvar(&epoch_schedule);
             }
             sysvar::rent::ID => {
                 use sysvar::rent::Rent;
 
                 let rent: Rent = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_rent(rent);
+                sysvar_cache.set_sysvar(&rent);
             }
             sysvar::slot_hashes::ID => {
                 use sysvar::slot_hashes::SlotHashes;
 
                 let slot_hashes: SlotHashes = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_slot_hashes(slot_hashes);
+                sysvar_cache.set_sysvar(&slot_hashes);
             }
             sysvar::stake_history::ID => {
                 use sysvar::stake_history::StakeHistory;
 
                 let stake_history: StakeHistory = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_stake_history(stake_history);
+                sysvar_cache.set_sysvar(&stake_history);
             }
             #[allow(deprecated)]
             id if sysvar::fees::check_id(&id) => {
                 use sysvar::fees::Fees;
 
                 let fees: Fees = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_fees(fees);
+                sysvar_cache.set_sysvar(&fees);
             }
             sysvar::last_restart_slot::ID => {
                 use sysvar::last_restart_slot::LastRestartSlot;
 
                 let last_restart_slot: LastRestartSlot = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_last_restart_slot(last_restart_slot);
+                sysvar_cache.set_sysvar(&last_restart_slot);
             }
             #[allow(deprecated)]
             id if sysvar::recent_blockhashes::check_id(&id) => {
                 use sysvar::recent_blockhashes::RecentBlockhashes;
 
                 let recent_blockhashes: RecentBlockhashes = bincode::deserialize(&account.data)?;
-                sysvar_cache.set_recent_blockhashes(recent_blockhashes);
+                sysvar_cache.set_sysvar(&recent_blockhashes);
             }
             _ => {}
         }

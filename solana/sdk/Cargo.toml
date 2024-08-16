@@ -71,7 +71,6 @@ pbkdf2 = { workspace = true }
 qstring = { workspace = true }
 qualifier_attr = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
-rand_core = "0.6.4"
 rand0-7 = { package = "rand", version = "0.7", optional = true }
 rustversion = { workspace = true }
 serde = { workspace = true }

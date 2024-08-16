@@ -12,7 +12,7 @@ use crate::error::NeonError;
 pub type NeonResult<T> = Result<T, NeonError>;
 
 #[serde_as]
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct SimulateSolanaRequest {
     pub compute_units: Option<u64>,
     pub heap_size: Option<u32>,
@@ -33,7 +33,7 @@ pub struct SimulateSolanaResponse {
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct SimulateSolanaTransactionResult {
     pub error: Option<solana_sdk::transaction::TransactionError>,
-    pub logs: Vec<String>,
+    pub logs: Option<Vec<String>>,
     pub executed_units: u64,
 }
 

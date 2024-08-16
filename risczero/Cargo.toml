@@ -15,5 +15,11 @@ git = "https://github.com/anza-xyz/curve25519-dalek.git"
 rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
 
 [patch.crates-io.ed25519-dalek]
-git = "https://github.com/staaason/ed25519-dalek.git"
-rev = "91938d89eb5ca4a141d6fda1d1db11aebadc4388"
+path = "../ed25519-dalek"
+
+[patch.crates-io]
+solana-program = { path = "../solana/sdk/program" }
+solana-curve25519 = { path = "../solana/curves/curve25519" }
+solana-sdk = {path = "../solana/sdk"}
+solana-zk-sdk = { path = "../solana/zk-sdk" }
+solana-zk-token-sdk = { path = "../solana/zk-token-sdk" }

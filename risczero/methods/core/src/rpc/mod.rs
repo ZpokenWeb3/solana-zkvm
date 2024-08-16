@@ -1,5 +1,5 @@
-pub(crate) mod validator_client;
-pub(crate) mod config;
+pub mod validator_client;
+pub mod config;
 
 pub use validator_client::CloneRpcClient;
 
@@ -14,6 +14,7 @@ use solana_sdk::{
     pubkey::Pubkey,
 };
 use solana_sdk::signature::Signature;
+use solana_cli::cli::CliError;
 use solana_sdk::transaction::VersionedTransaction;
 
 #[async_trait(?Send)]
@@ -50,7 +51,6 @@ macro_rules! e {
 
 pub(crate) use e;
 use solana_simulator_types::error::NeonError;
-use solana_simulator_types::error::NeonError::CliError;
 use solana_simulator_types::result::NeonResult;
 
 pub(crate) async fn check_account_for_fee(

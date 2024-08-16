@@ -12,7 +12,7 @@ use {
     ed25519_dalek::Signer as DalekSigner,
     ed25519_dalek_bip32::Error as Bip32Error,
     hmac::Hmac,
-    rand_core::{OsRng, CryptoRng, RngCore},
+    rand0_7::{rngs::OsRng, CryptoRng, RngCore},
     std::{
         error,
         io::{Read, Write},
