@@ -1,18 +1,18 @@
-use std::collections::HashSet;
+use crate::solana_simulator::utils::SyncState;
+use crate::solana_simulator::SolanaSimulator;
 use bincode::Options;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::transaction::{SanitizedTransaction, Transaction, VersionedTransaction};
-use crate::solana_simulator::SolanaSimulator;
-use crate::solana_simulator::utils::SyncState;
+use std::collections::HashSet;
 
 #[cfg(feature = "async_enabled")]
 use {
-    crate::rpc::{CloneRpcClient, Rpc, RpcEnum, config::Config},
-    solana_simulator_types::result::SimulateSolanaRequest,
-    solana_simulator_types::result::NeonResult,
-    solana_svm::runtime_config::RuntimeConfig,
+    crate::rpc::{config::Config, CloneRpcClient, Rpc, RpcEnum},
+    solana_compute_budget::compute_budget::ComputeBudget,
     solana_simulator_types::error::NeonError,
-    solana_compute_budget::compute_budget::ComputeBudget
+    solana_simulator_types::result::NeonResult,
+    solana_simulator_types::result::SimulateSolanaRequest,
+    solana_svm::runtime_config::RuntimeConfig,
 };
 
 fn address_table_lookups(txs: &[VersionedTransaction]) -> Vec<Pubkey> {
@@ -57,12 +57,12 @@ fn decode_transaction(data: &[u8]) -> Result<VersionedTransaction, bincode::Erro
     Ok(tx.into())
 }
 
-
 #[cfg(feature = "async_enabled")]
 async fn build_rpc(config: &Config) -> Result<RpcEnum, NeonError> {
-    Ok(RpcEnum::CloneRpcClient(CloneRpcClient::new_from_config(config)))
+    Ok(RpcEnum::CloneRpcClient(CloneRpcClient::new_from_config(
+        config,
+    )))
 }
-
 
 #[cfg(feature = "async_enabled")]
 fn runtime_config(request: &SimulateSolanaRequest) -> RuntimeConfig {

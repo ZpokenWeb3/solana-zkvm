@@ -5,6 +5,7 @@ use std::array::TryFromSliceError;
 use std::net::AddrParseError;
 use std::string::FromUtf8Error;
 
+use crate::simulator_error::Error;
 use log::error;
 use solana_cli::cli::CliError as SolanaCliError;
 use solana_client::client_error::ClientError as SolanaClientError;
@@ -14,7 +15,6 @@ use solana_sdk::pubkey::{Pubkey, PubkeyError as SolanaPubkeyError};
 use solana_sdk::signer::SignerError as SolanaSignerError;
 use solana_sdk::transaction::TransactionError;
 use thiserror::Error;
-use crate::simulator_error::Error;
 
 /// Errors that may be returned by the neon-cli program.
 #[derive(Debug, Error)]

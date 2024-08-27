@@ -2,3 +2,8 @@
 Cargo.lock
 methods/guest/Cargo.lock
 target/
+.cargo
+tests/Elf.sol
+contracts/ImageID.sol
+cache/
+out/

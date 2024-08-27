@@ -1,5 +1,11 @@
+use crate::rpc::config::{APIOptions, Config};
+use crate::rpc::Rpc;
 use async_trait::async_trait;
+use log::info;
+use serde::Deserialize;
+use serde_json::json;
 use solana_account_decoder::{UiAccount, UiAccountEncoding};
+use solana_client::rpc_config::RpcTransactionConfig;
 use solana_client::{
     client_error::{ClientError, ClientErrorKind, Result as ClientResult},
     nonblocking::rpc_client::RpcClient,
@@ -7,24 +13,20 @@ use solana_client::{
     rpc_request::RpcRequest,
     rpc_response::Response,
 };
+use solana_sdk::commitment_config::CommitmentConfig;
+use solana_sdk::signature::Signature;
+use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{
     account::Account,
     clock::{Slot, UnixTimestamp},
     pubkey::Pubkey,
 };
+use solana_transaction_status::{
+    EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction, UiTransactionEncoding,
+};
+use std::pin::Pin;
 use std::{error::Error, ops::Deref, time::Duration};
 use std::{future::Future, sync::Arc};
-use std::pin::Pin;
-use log::info;
-use serde::Deserialize;
-use serde_json::json;
-use solana_client::rpc_config::RpcTransactionConfig;
-use solana_sdk::commitment_config::CommitmentConfig;
-use solana_sdk::signature::Signature;
-use solana_sdk::transaction::VersionedTransaction;
-use solana_transaction_status::{EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction, UiTransactionEncoding};
-use crate::rpc::config::{APIOptions, Config};
-use crate::rpc::Rpc;
 
 fn should_retry(e: &ClientError) -> bool {
     let ClientErrorKind::Reqwest(reqwest_error) = e.kind() else {
@@ -57,7 +59,7 @@ fn should_retry(e: &ClientError) -> bool {
 async fn with_retries<F, Fut, R>(max_retries: usize, request: F) -> ClientResult<R>
 where
     F: Fn() -> Fut,
-    Fut: Future<Output=ClientResult<R>>,
+    Fut: Future<Output = ClientResult<R>>,
 {
     for _ in 0..max_retries {
         match request().await {
@@ -229,17 +231,20 @@ impl Rpc for CloneRpcClient {
         Ok(result)
     }
 
-    async fn get_transaction(&self, signature: &Signature) -> ClientResult<Option<VersionedTransaction>>
-    {
+    async fn get_transaction(
+        &self,
+        signature: &Signature,
+    ) -> ClientResult<Option<VersionedTransaction>> {
         let config = RpcTransactionConfig {
             encoding: Some(UiTransactionEncoding::Base64),
             commitment: Some(self.commitment()),
             max_supported_transaction_version: Some(0),
         };
-        let tx = self.rpc.get_transaction_with_config(
-            &signature,
-            config,
-        ).await.unwrap();
+        let tx = self
+            .rpc
+            .get_transaction_with_config(&signature, config)
+            .await
+            .unwrap();
 
         Ok(tx.transaction.transaction.decode())
     }

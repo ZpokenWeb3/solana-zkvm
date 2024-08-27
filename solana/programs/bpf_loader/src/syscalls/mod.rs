@@ -705,6 +705,7 @@ fn translate_and_check_program_address_inputs<'a>(
 ) -> Result<(Vec<&'a [u8]>, &'a Pubkey), Error> {
     let untranslated_seeds =
         translate_slice::<&[u8]>(memory_mapping, seeds_addr, seeds_len, check_aligned)?;
+
     if untranslated_seeds.len() > MAX_SEEDS {
         return Err(SyscallError::BadSeeds(PubkeyError::MaxSeedLengthExceeded).into());
     }
@@ -742,7 +743,6 @@ declare_builtin_function!(
             .get_compute_budget()
             .create_program_address_units;
         consume_compute_meter(invoke_context, cost)?;
-
         let (seeds, program_id) = translate_and_check_program_address_inputs(
             seeds_addr,
             seeds_len,
@@ -754,6 +754,7 @@ declare_builtin_function!(
         let Ok(new_address) = Pubkey::create_program_address(&seeds, program_id) else {
             return Ok(1);
         };
+
         let address = translate_slice_mut::<u8>(
             memory_mapping,
             address_addr,

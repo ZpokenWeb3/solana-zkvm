@@ -330,6 +330,8 @@ macro_rules! declare_builtin_function {
                 if config.enable_instruction_meter {
                     vm.context_object_pointer.consume(vm.previous_instruction_meter - vm.due_insn_count);
                 }
+                let syscall_name = stringify!($name);
+                println!("Syscall name: {}", syscall_name);
                 let converted_result: $crate::error::ProgramResult = Self::rust $(::<$($generic_ident),+>)?(
                     vm.context_object_pointer, $arg_a, $arg_b, $arg_c, $arg_d, $arg_e, &mut vm.memory_mapping,
                 ).map_err(|err| $crate::error::EbpfError::SyscallError(err)).into();

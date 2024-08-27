@@ -1,9 +1,7 @@
-use solana_program::{bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable};
 use solana_program::pubkey::Pubkey;
+use solana_program::{bpf_loader, bpf_loader_deprecated, bpf_loader_upgradeable};
 use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
 use solana_sdk::feature_set;
-
-
 
 /// Identifies the type of built-in program targeted for Core BPF migration.
 /// The type of target determines whether the program should have a program
@@ -127,7 +125,7 @@ pub static BUILTINS: &[BuiltinPrototype] = &[
             source_buffer_address: buffer_accounts::address_lookup_table_program::id(),
             upgrade_authority_address: None,
             feature_id:
-            solana_sdk::feature_set::migrate_address_lookup_table_program_to_core_bpf::id(),
+                solana_sdk::feature_set::migrate_address_lookup_table_program_to_core_bpf::id(),
             migration_target: CoreBpfMigrationTargetType::Builtin,
             datapoint_name: "migrate_builtin_to_core_bpf_address_lookup_table_program",
         }),

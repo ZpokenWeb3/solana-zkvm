@@ -1,15 +1,13 @@
 use async_trait::async_trait;
 use enum_dispatch::enum_dispatch;
 
-
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signer::Signer;
 use solana_simulator_types::result::NeonResult;
 
 use crate::rpc::CloneRpcClient;
-use crate::solana_simulator::SolanaSimulator;
 use crate::rpc::RpcEnum;
-
+use crate::solana_simulator::SolanaSimulator;
 
 #[allow(clippy::large_enum_variant)]
 pub enum ConfigSimulator<'r> {

@@ -1,15 +1,15 @@
+use crate::rpc::{CloneRpcClient, RpcEnum};
 use clap::ArgMatches;
+use serde::{Deserialize, Serialize};
 use solana_clap_utils::{
     input_parsers::pubkey_of, input_validators::normalize_to_url_if_moniker,
     keypair::keypair_from_path,
 };
-use solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair};
-use std::{env, str::FromStr};
-use serde::{Deserialize, Serialize};
-use solana_sdk::signer::Signer;
-use solana_simulator_types::error::NeonError;
 use solana_sdk::pubkey::Pubkey;
-use crate::rpc::{CloneRpcClient, RpcEnum};
+use solana_sdk::signer::Signer;
+use solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair};
+use solana_simulator_types::error::NeonError;
+use std::{env, str::FromStr};
 
 #[derive(Debug)]
 pub struct Config {
@@ -70,7 +70,6 @@ pub fn load_api_config_from_environment() -> APIOptions {
     }
 }
 
-
 /// # Panics
 /// # Errors
 /// `EvmLoaderNotSpecified` - if `evm_loader` is not specified
@@ -104,7 +103,7 @@ pub fn create(options: &ArgMatches) -> Result<Config, NeonError> {
         "fee_payer",
         true,
     )
-        .ok();
+    .ok();
 
     let key_for_config = if let Some(key_for_config) = pubkey_of(options, "solana_key_for_config") {
         key_for_config
@@ -114,7 +113,6 @@ pub fn create(options: &ArgMatches) -> Result<Config, NeonError> {
             .map(Keypair::pubkey)
             .ok_or(NeonError::SolanaKeyForConfigNotSpecified)?
     };
-
 
     Ok(Config {
         key_for_config,
@@ -127,5 +125,7 @@ pub fn create(options: &ArgMatches) -> Result<Config, NeonError> {
 }
 
 pub async fn build_rpc(config: &Config) -> Result<RpcEnum, NeonError> {
-    Ok(RpcEnum::CloneRpcClient(CloneRpcClient::new_from_config(config)))
+    Ok(RpcEnum::CloneRpcClient(CloneRpcClient::new_from_config(
+        config,
+    )))
 }

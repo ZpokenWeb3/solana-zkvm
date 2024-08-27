@@ -1,12 +1,6 @@
-use std::collections::BTreeMap;
-use std::rc::Rc;
-use std::sync::Arc;
-use std::borrow::Borrow;
-use std::cell::Ref;
 use solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1;
 use solana_compute_budget::compute_budget::ComputeBudget;
 use solana_loader_v4_program::create_program_runtime_environment_v2;
-use solana_program::{address_lookup_table, bpf_loader_upgradeable, loader_v4};
 use solana_program::address_lookup_table::error::AddressLookupError;
 use solana_program::address_lookup_table::state::AddressLookupTable;
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
@@ -14,49 +8,55 @@ use solana_program::clock::{Clock, Slot};
 use solana_program::fee_calculator::DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
 use solana_program::instruction::{CompiledInstruction, TRANSACTION_LEVEL_STACK_HEIGHT};
 use solana_program::loader_v4::{LoaderV4State, LoaderV4Status};
-use solana_program::message::{AddressLoader, AddressLoaderError, SanitizedMessage};
 use solana_program::message::v0::{LoadedAddresses, MessageAddressTableLookup};
+use solana_program::message::{AddressLoader, AddressLoaderError, SanitizedMessage};
 use solana_program::sysvar::{Sysvar, SysvarId};
+use solana_program::{address_lookup_table, bpf_loader_upgradeable, loader_v4};
 use solana_program_runtime::invoke_context::{EnvironmentConfig, InvokeContext};
-use solana_program_runtime::loaded_programs::{LoadProgramMetrics, ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType, ProgramCacheForTxBatch, ProgramRuntimeEnvironments};
+use solana_program_runtime::loaded_programs::{
+    LoadProgramMetrics, ProgramCacheEntry, ProgramCacheEntryOwner, ProgramCacheEntryType,
+    ProgramCacheForTxBatch, ProgramRuntimeEnvironments,
+};
 use solana_program_runtime::log_collector::LogCollector;
 use solana_program_runtime::sysvar_cache::SysvarCache;
 use solana_program_runtime::timings::ExecuteTimings;
-use solana_sdk::account::{Account, AccountSharedData, create_account_shared_data_with_fields, DUMMY_INHERITABLE_ACCOUNT_FIELDS, PROGRAM_OWNERS, ReadableAccount};
+use solana_sdk::account::{
+    create_account_shared_data_with_fields, Account, AccountSharedData, ReadableAccount,
+    DUMMY_INHERITABLE_ACCOUNT_FIELDS, PROGRAM_OWNERS,
+};
 use solana_sdk::account_utils::StateMut;
 use solana_sdk::feature_set::FeatureSet;
-use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::inner_instruction::{InnerInstruction, InnerInstructionsList};
 use solana_sdk::reserved_account_keys::ReservedAccountKeys;
 use solana_sdk::signature::Keypair;
+use solana_sdk::sysvar::rent::Rent;
 use solana_sdk::transaction::{SanitizedTransaction, TransactionError, VersionedTransaction};
 use solana_sdk::transaction_context::{ExecutionRecord, IndexOfAccount, TransactionContext};
 use solana_svm::account_loader::construct_instructions_account;
 use solana_svm::message_processor::MessageProcessor;
 use solana_svm::runtime_config::RuntimeConfig;
+use std::borrow::Borrow;
+use std::cell::Ref;
+use std::collections::BTreeMap;
+use std::rc::Rc;
+use std::sync::Arc;
 
-use solana_sdk::pubkey::Pubkey;
 use solana_program::hash::Hash;
+use solana_sdk::pubkey::Pubkey;
 
-use crate::bultins::{BUILTINS};
+use crate::bultins::BUILTINS;
 
-use serde::Serialize;
+use serde::de::{Deserializer, Visitor};
 use serde::Deserialize;
+use serde::Serialize;
 use serde::Serializer;
-use serde::de::{self, Deserializer, Visitor};
-use std::fmt;
-use bincode::Options;
-#[cfg(feature = "async_enabled")]
-use {
-    crate::solana_simulator::utils::SyncState,
-    log::debug,
-    crate::rpc::Rpc,
-};
 use solana_simulator_types::result::TransactionSimulationResult;
 use solana_simulator_types::simulator_error::Error;
 
-pub(crate) mod utils;
+#[cfg(feature = "async_enabled")]
+use {crate::rpc::Rpc, crate::solana_simulator::utils::SyncState, log::debug};
 
+pub(crate) mod utils;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SolanaSimulator {
@@ -64,7 +64,10 @@ pub struct SolanaSimulator {
     feature_set: Arc<FeatureSet>,
     accounts_db: BTreeMap<Pubkey, AccountSharedData>,
     sysvar_cache: SysvarCache,
-    #[serde(serialize_with = "serialize_keypair", deserialize_with = "deserialize_keypair")]
+    #[serde(
+        serialize_with = "serialize_keypair",
+        deserialize_with = "deserialize_keypair"
+    )]
     payer: Keypair,
 }
 
@@ -258,7 +261,13 @@ impl SolanaSimulator {
                 tx.message.hash()
             };
 
-            SanitizedTransaction::try_create(tx, message_hash, None, self, &ReservedAccountKeys::empty_key_set())
+            SanitizedTransaction::try_create(
+                tx,
+                message_hash,
+                None,
+                self,
+                &ReservedAccountKeys::empty_key_set(),
+            )
         }?;
 
         if verify {
@@ -312,21 +321,23 @@ impl SolanaSimulator {
             None,
             self.feature_set.clone(),
             DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE / 2,
-            &self.sysvar_cache
+            &self.sysvar_cache,
         );
 
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
             &mut loaded_programs,
             env_config,
-            Some(Rc::clone(&log_collector)), compute_budget);
+            Some(Rc::clone(&log_collector)),
+            compute_budget,
+        );
 
         let mut status = MessageProcessor::process_message(
             tx.message(),
             &program_indices,
             &mut invoke_context,
             &mut ExecuteTimings::default(),
-            &mut units_consumed
+            &mut units_consumed,
         );
 
         let inner_instructions = Some(inner_instructions_list_from_instruction_trace(
@@ -348,7 +359,11 @@ impl SolanaSimulator {
             status = Err(TransactionError::UnbalancedTransaction);
         }
 
-        let logs = Rc::try_unwrap(log_collector).unwrap_err().borrow_mut().get_recorded_content().to_vec();
+        let logs = Rc::try_unwrap(log_collector)
+            .unwrap_err()
+            .borrow_mut()
+            .get_recorded_content()
+            .to_vec();
 
         let return_data = if return_data.data.is_empty() {
             None
@@ -456,7 +471,11 @@ impl SolanaSimulator {
                     };
                     let loaded_program = match self.load_program_accounts(account) {
                         ProgramAccountLoadResult::InvalidAccountData => {
-                            ProgramCacheEntry::new_tombstone(0, ProgramCacheEntryOwner::NativeLoader, ProgramCacheEntryType::Closed)
+                            ProgramCacheEntry::new_tombstone(
+                                0,
+                                ProgramCacheEntryOwner::NativeLoader,
+                                ProgramCacheEntryType::Closed,
+                            )
                         }
 
                         ProgramAccountLoadResult::ProgramOfLoaderV1orV2(program_account) => {

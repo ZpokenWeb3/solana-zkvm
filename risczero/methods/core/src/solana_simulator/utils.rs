@@ -1,16 +1,12 @@
-use solana_program::{address_lookup_table, bpf_loader_upgradeable, sysvar};
 use solana_program::address_lookup_table::state::{AddressLookupTable, LookupTableMeta};
 use solana_program::bpf_loader_upgradeable::UpgradeableLoaderState;
+use solana_program::{address_lookup_table, bpf_loader_upgradeable, sysvar};
 use solana_sdk::account::Account;
 use solana_sdk::account_utils::StateMut;
 use solana_sdk::pubkey::Pubkey;
 
-
 #[cfg(feature = "async_enabled")]
-use {
-    crate::rpc::Rpc,
-    solana_program_runtime::sysvar_cache::SysvarCache,
-};
+use {crate::rpc::Rpc, solana_program_runtime::sysvar_cache::SysvarCache};
 
 use solana_simulator_types::simulator_error::Error;
 
@@ -94,7 +90,6 @@ pub async fn sync_sysvar_accounts(
 
     Ok(())
 }
-
 
 pub fn program_data_address(account: &Account) -> Result<Pubkey, Error> {
     assert!(account.executable);

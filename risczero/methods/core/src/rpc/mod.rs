@@ -1,32 +1,39 @@
-pub mod validator_client;
 pub mod config;
+pub mod validator_client;
 
 pub use validator_client::CloneRpcClient;
 
 use async_trait::async_trait;
 use enum_dispatch::enum_dispatch;
+use solana_cli::cli::CliError;
 use solana_client::client_error::Result as ClientResult;
 use solana_sdk::message::Message;
 use solana_sdk::native_token::lamports_to_sol;
+use solana_sdk::signature::Signature;
+use solana_sdk::transaction::VersionedTransaction;
 use solana_sdk::{
     account::Account,
     clock::{Slot, UnixTimestamp},
     pubkey::Pubkey,
 };
-use solana_sdk::signature::Signature;
-use solana_cli::cli::CliError;
-use solana_sdk::transaction::VersionedTransaction;
+
+use crate::config_simulator::ConfigSimulator;
+use crate::config_simulator::BuildConfigSimulator;
+
 
 #[async_trait(?Send)]
 #[enum_dispatch]
 pub trait Rpc {
     async fn get_account(&self, key: &Pubkey) -> ClientResult<Option<Account>>;
     async fn get_multiple_accounts(&self, pubkeys: &[Pubkey])
-                                   -> ClientResult<Vec<Option<Account>>>;
+        -> ClientResult<Vec<Option<Account>>>;
     async fn get_block_time(&self, slot: Slot) -> ClientResult<UnixTimestamp>;
     async fn get_slot(&self) -> ClientResult<Slot>;
     async fn get_deactivated_solana_features(&self) -> ClientResult<Vec<Pubkey>>;
-    async fn get_transaction(&self, signature: &Signature) -> ClientResult<Option<VersionedTransaction>>;
+    async fn get_transaction(
+        &self,
+        signature: &Signature,
+    ) -> ClientResult<Option<VersionedTransaction>>;
 }
 
 #[enum_dispatch(BuildConfigSimulator, Rpc)]
