@@ -298,7 +298,7 @@ pub enum SystemInstruction {
 ///
 /// # Examples
 ///
-/// These example-programs use a single invocation of
+/// These examples use a single invocation of
 /// [`SystemInstruction::CreateAccount`] to create a new account, allocate some
 /// space, transfer it the minimum lamports for rent exemption, and assign it to
 /// the system program,
@@ -505,7 +505,7 @@ pub fn create_account_with_seed(
 ///
 /// # Examples
 ///
-/// These example-programs allocate space for an account, transfer it the minimum
+/// These examples allocate space for an account, transfer it the minimum
 /// balance for rent exemption, and assign the account to a program.
 ///
 /// ## Example: client-side RPC
@@ -716,7 +716,7 @@ pub fn assign_with_seed(
 ///
 /// # Examples
 ///
-/// These example-programs allocate space for an account, transfer it the minimum
+/// These examples allocate space for an account, transfer it the minimum
 /// balance for rent exemption, and assign the account to a program.
 ///
 /// # Example: client-side RPC
@@ -936,7 +936,7 @@ pub fn transfer_with_seed(
 ///
 /// # Examples
 ///
-/// These example-programs allocate space for an account, transfer it the minimum
+/// These examples allocate space for an account, transfer it the minimum
 /// balance for rent exemption, and assign the account to a program.
 ///
 /// # Example: client-side RPC

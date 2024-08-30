@@ -1,0 +1,40 @@
+[package]
+name = "solana-entry"
+description = "Solana Entry"
+documentation = "https://docs.rs/solana-poh"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+bincode = { workspace = true }
+crossbeam-channel = { workspace = true }
+dlopen2 = { workspace = true }
+lazy_static = { workspace = true }
+log = { workspace = true }
+rand = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+solana-measure = { workspace = true }
+solana-merkle-tree = { workspace = true }
+solana-metrics = { workspace = true }
+solana-perf = { workspace = true }
+solana-rayon-threadlimit = { workspace = true }
+solana-sdk = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+solana-logger = { workspace = true }
+
+[lib]
+crate-type = ["lib"]
+name = "solana_entry"
+
+[[bench]]
+name = "entry_sigverify"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

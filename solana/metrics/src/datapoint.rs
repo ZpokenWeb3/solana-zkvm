@@ -40,10 +40,12 @@
 //! );
 //!
 use std::{fmt};
+use std::time::SystemTime;
 
 #[derive(Clone, Debug)]
 pub struct DataPoint {
     pub name: &'static str,
+    pub timestamp: Option<SystemTime>,
     /// tags are eligible for group-by operations.
     pub tags: Vec<(&'static str, String)>,
     pub fields: Vec<(&'static str, String)>,
@@ -53,6 +55,11 @@ impl DataPoint {
     pub fn new(name: &'static str) -> Self {
         DataPoint {
             name,
+            timestamp: if cfg!(feature = "timing") {
+                Some(SystemTime::now())
+            } else {
+                None
+            },
             tags: vec![],
             fields: vec![],
         }

@@ -1,0 +1,43 @@
+[package]
+name = "solana-client"
+description = "Solana Client"
+documentation = "https://docs.rs/solana-client"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+async-trait = { workspace = true }
+bincode = { workspace = true }
+dashmap = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+indexmap = { workspace = true }
+indicatif = { workspace = true }
+log = { workspace = true }
+quinn = { workspace = true }
+rayon = { workspace = true }
+solana-connection-cache = { workspace = true }
+solana-measure = { workspace = true }
+solana-metrics = { workspace = true }
+solana-pubsub-client = { workspace = true }
+solana-quic-client = { workspace = true }
+solana-rpc-client = { workspace = true, features = ["default"] }
+solana-rpc-client-api = { workspace = true }
+solana-rpc-client-nonce-utils = { workspace = true }
+solana-sdk = { workspace = true }
+solana-streamer = { workspace = true }
+solana-thin-client = { workspace = true }
+solana-tpu-client = { workspace = true, features = ["default"] }
+solana-udp-client = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+
+[dev-dependencies]
+crossbeam-channel = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

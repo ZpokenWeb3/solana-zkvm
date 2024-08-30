@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["host", "methods"]
+members = ["host", "methods",  "methods/core", "methods/core/types"]
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
@@ -9,3 +9,17 @@ opt-level = 3
 [profile.release]
 debug = 1
 lto = true
+
+[patch.crates-io.curve25519-dalek]
+git = "https://github.com/anza-xyz/curve25519-dalek.git"
+rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
+
+[patch.crates-io.ed25519-dalek]
+path = "../ed25519-dalek"
+
+[patch.crates-io]
+solana-program = { path = "../solana/sdk/program" }
+solana-curve25519 = { path = "../solana/curves/curve25519" }
+solana-sdk = {path = "../solana/sdk"}
+solana-zk-sdk = { path = "../solana/zk-sdk" }
+solana-zk-token-sdk = { path = "../solana/zk-token-sdk" }

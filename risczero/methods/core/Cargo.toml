@@ -4,19 +4,68 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-solana-program = {path = "../../../solana/sdk/program", version = "=2.0.3"}
-solana-sdk = { path = "../../../solana/sdk", version = "=2.0.3" }
-solana-svm = {path = "../../../solana/svm", version = "=2.0.3"}
-solana-program-runtime = {path = "../../../solana/program-runtime", version = "=2.0.3"}
-solana-compute-budget = {path = "../../../solana/compute-budget", version = "=2.0.3"}
-solana-bpf-loader-program = {path = "../../../solana/programs/bpf_loader", version = "=2.0.3"}
-solana-system-program = {path = "../../../solana/programs/system", version = "=2.0.3"}
+solana-program = { path = "../../../solana/sdk/program", version = "=2.0.3", default-features = false }
+solana-sdk = { path = "../../../solana/sdk", version = "=2.0.3", features = ["dev-context-only-utils"] }
+solana-svm = { path = "../../../solana/svm", version = "=2.0.3", default-features = false }
+solana-program-runtime = { path = "../../../solana/program-runtime", version = "=2.0.3", default-features = false }
+solana-compute-budget = { path = "../../../solana/compute-budget", version = "=2.0.3", default-features = false }
+solana-bpf-loader-program = { path = "../../../solana/programs/bpf_loader", version = "=2.0.3", default-features = false }
+solana-system-program = { path = "../../../solana/programs/system", version = "=2.0.3", default-features = false }
+solana-client = { path = "../../../solana/client", version = "=2.0.3", optional = true }
+solana-loader-v4-program = { path = "../../../solana/programs/loader-v4", version = "=2.0.3" }
+solana-compute-budget-program = { path = "../../../solana/programs/compute-budget", version = "=2.0.3" }
+solana-address-lookup-table-program = { path = "../../../solana/programs/address-lookup-table", version = "=2.0.3"}
+solana-account-decoder = { path = "../../../solana/account-decoder", version = "=2.0.3", optional = true}
+solana-cli-config = {path = "../../../solana/cli-config", version = "=2.0.3", optional = true}
+solana-cli = {path = "../../../solana/cli", version = "=2.0.3", optional = true}
 bincode = "1.3.3"
+serde = { version = "1.0.204", features = ["derive"] }
+base64 = "0.22.1"
+thiserror = "1.0.63"
+hex = "0.4.3"
+async-trait = "0.1.81"
+log = "0.4.22"
+serde_json = "1.0.117"
+solana-simulator-types = {path = "types"}
+serde_with = { version = "3.9", features = ["hex"] }
+enum_dispatch = "0.3.13"
+tokio = { version = "1.39.2", optional = true }
+solana-transaction-status = { path = "../../../solana/transaction-status", version = "=2.0.3", optional = true}
+hyper = { version = "0.14.29", optional = true }
+clap = { version = "2.34.0", optional = true }
+solana-clap-utils = {path = "../../../solana/clap-utils", version = "=2.0.3", optional = true}
+
+[dev-dependencies]
+wasm-bindgen = "0.2.92"
+wasm-bindgen-test = "0.3.42"
+console_log = "1.0.0"
+log = "0.4.22"
+serde_json = "1.0.117"
+serde = { version = "1.0.204", features = ["derive"] }
+
+[features]
+async_enabled = [
+    "solana-client",
+    "solana-account-decoder",
+    "tokio",
+    "solana-transaction-status",
+    "hyper",
+    "solana-cli-config",
+    "clap",
+    "solana-simulator-types/async_enabled",
+    "solana-cli",
+    "solana-clap-utils"
+]
 
 [patch.crates-io.curve25519-dalek]
 git = "https://github.com/anza-xyz/curve25519-dalek.git"
 rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
 
 [patch.crates-io.ed25519-dalek]
-git = "https://github.com/staaason/ed25519-dalek.git"
-rev = "91938d89eb5ca4a141d6fda1d1db11aebadc4388"
+path = "../../../ed25519-dalek"
+
+[patch.crates-io]
+#solana-program = { path = "../../../solana/sdk/program" }
+solana-curve25519 = { path = "../../../solana/curves/curve25519" }
+solana-zk-sdk = { path = "../../../solana/zk-sdk" }
+solana-zk-token-sdk = { path = "../../../solana/zk-token-sdk" }

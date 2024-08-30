@@ -5,6 +5,11 @@
 #[macro_use]
 extern crate eager;
 
+
+#[macro_use]
+#[cfg(feature = "metrics")]
+extern crate solana_metrics;
+
 pub use solana_rbpf;
 pub mod invoke_context;
 pub mod loaded_programs;

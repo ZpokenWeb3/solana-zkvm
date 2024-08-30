@@ -29,7 +29,7 @@ use {
         io::Write,
         path::{Path, PathBuf},
         str::FromStr,
-        time::{UNIX_EPOCH},
+        time::{SystemTime, UNIX_EPOCH},
     },
 };
 
@@ -91,6 +91,8 @@ impl FromStr for ClusterType {
 )]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct GenesisConfig {
+    /// when the network (bootstrap validator) was started relative to the UNIX Epoch
+    pub creation_time: UnixTimestamp,
     /// initial accounts
     pub accounts: BTreeMap<Pubkey, Account>,
     /// built-in programs
@@ -134,6 +136,14 @@ pub fn create_genesis_config(lamports: u64) -> (GenesisConfig, Keypair) {
 impl Default for GenesisConfig {
     fn default() -> Self {
         Self {
+            creation_time: if cfg!(feature = "timing") {
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs() as UnixTimestamp
+            } else {
+                0 as UnixTimestamp
+            },
             accounts: BTreeMap::default(),
             native_instruction_processors: Vec::default(),
             rewards_pools: BTreeMap::default(),
@@ -255,6 +265,7 @@ impl fmt::Display for GenesisConfig {
         write!(
             f,
             "\
+             Creation time: {}\n\
              Cluster type: {:?}\n\
              Genesis hash: {}\n\
              Shred version: {}\n\
@@ -271,6 +282,9 @@ impl fmt::Display for GenesisConfig {
              Native instruction processors: {:#?}\n\
              Rewards pool: {:#?}\n\
              ",
+            Utc.timestamp_opt(self.creation_time, 0)
+                .unwrap()
+                .to_rfc3339(),
             self.cluster_type,
             self.hash(),
             compute_shred_version(&self.hash(), None),

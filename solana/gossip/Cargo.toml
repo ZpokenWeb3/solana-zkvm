@@ -1,0 +1,92 @@
+[package]
+name = "solana-gossip"
+description = "Blockchain, Rebuilt for Scale"
+documentation = "https://docs.rs/solana-gossip"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+assert_matches = { workspace = true }
+bincode = { workspace = true }
+bv = { workspace = true, features = ["serde"] }
+clap = { workspace = true }
+crossbeam-channel = { workspace = true }
+flate2 = { workspace = true }
+indexmap = { workspace = true, features = ["rayon"] }
+itertools = { workspace = true }
+log = { workspace = true }
+lru = { workspace = true }
+num-traits = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+rayon = { workspace = true }
+rustversion = { workspace = true }
+serde = { workspace = true }
+serde_bytes = { workspace = true }
+serde_derive = { workspace = true }
+solana-bloom = { workspace = true }
+solana-clap-utils = { workspace = true }
+solana-client = { workspace = true }
+solana-connection-cache = { workspace = true }
+solana-entry = { workspace = true }
+solana-frozen-abi = { workspace = true, optional = true }
+solana-frozen-abi-macro = { workspace = true, optional = true }
+solana-ledger = { workspace = true }
+solana-logger = { workspace = true }
+solana-measure = { workspace = true }
+solana-metrics = { workspace = true }
+solana-net-utils = { workspace = true }
+solana-perf = { workspace = true }
+solana-rayon-threadlimit = { workspace = true }
+solana-runtime = { workspace = true }
+solana-sdk = { workspace = true }
+solana-streamer = { workspace = true }
+solana-tpu-client = { workspace = true }
+solana-version = { workspace = true }
+solana-vote = { workspace = true }
+solana-vote-program = { workspace = true }
+static_assertions = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+num_cpus = { workspace = true }
+serial_test = { workspace = true }
+solana-runtime = { workspace = true, features = ["dev-context-only-utils"] }
+test-case = { workspace = true }
+
+[build-dependencies]
+rustc_version = { workspace = true }
+
+[features]
+frozen-abi = [
+    "dep:solana-frozen-abi",
+    "dep:solana-frozen-abi-macro",
+    "solana-bloom/frozen-abi",
+    "solana-ledger/frozen-abi",
+    "solana-perf/frozen-abi",
+    "solana-runtime/frozen-abi",
+    "solana-sdk/frozen-abi",
+    "solana-version/frozen-abi",
+    "solana-vote/frozen-abi",
+    "solana-vote-program/frozen-abi",
+]
+
+[[bench]]
+name = "crds"
+
+[[bench]]
+name = "crds_gossip_pull"
+
+[[bench]]
+name = "crds_shards"
+
+[[bin]]
+name = "solana-gossip"
+path = "src/main.rs"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

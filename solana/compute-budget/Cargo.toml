@@ -12,6 +12,7 @@ edition = { workspace = true }
 [dependencies]
 solana-frozen-abi = { workspace = true, optional = true }
 solana-sdk = { workspace = true }
+serde = { version = "1.0.203", features = ["derive"] }
 
 [build-dependencies]
 rustc_version = { workspace = true }

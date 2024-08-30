@@ -21,11 +21,13 @@ solana-compute-budget = { workspace = true }
 solana-frozen-abi = { workspace = true, optional = true }
 solana-frozen-abi-macro = { workspace = true, optional = true }
 solana-loader-v4-program = { workspace = true }
+solana-measure = { workspace = true }
 solana-program-runtime = { workspace = true }
 solana-sdk = { workspace = true }
 solana-system-program = { workspace = true }
 solana-type-overrides = { workspace = true }
 solana-vote = { workspace = true }
+solana-metrics = {workspace = true, optional = true}
 
 [lib]
 crate-type = ["lib"]
@@ -54,6 +56,8 @@ rustc_version = { workspace = true }
 
 [features]
 dev-context-only-utils = []
+default = ["metrics"]
+metrics = ["solana-metrics"]
 frozen-abi = [
     "dep:solana-frozen-abi",
     "dep:solana-frozen-abi-macro",
@@ -67,3 +71,4 @@ shuttle-test = [
     "solana-bpf-loader-program/shuttle-test",
     "solana-loader-v4-program/shuttle-test",
 ]
+timing = []

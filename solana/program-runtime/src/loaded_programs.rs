@@ -33,6 +33,9 @@ use {
     },
 };
 
+#[cfg(feature = "timing")]
+use solana_measure::measure::Measure;
+
 pub type ProgramRuntimeEnvironment = Arc<BuiltinProgram<InvokeContext<'static>>>;
 pub const MAX_LOADED_ENTRY_COUNT: usize = 256;
 pub const DELAY_VISIBILITY_SLOT_OFFSET: Slot = 1;
@@ -302,14 +305,15 @@ impl LoadProgramMetrics {
         saturating_add_assign!(timings.create_executor_load_elf_us, self.load_elf_us);
         saturating_add_assign!(timings.create_executor_verify_code_us, self.verify_code_us);
         saturating_add_assign!(timings.create_executor_jit_compile_us, self.jit_compile_us);
-        // datapoint_trace!(
-        //     "create_executor_trace",
-        //     ("program_id", self.program_id, String),
-        //     ("register_syscalls_us", self.register_syscalls_us, i64),
-        //     ("load_elf_us", self.load_elf_us, i64),
-        //     ("verify_code_us", self.verify_code_us, i64),
-        //     ("jit_compile_us", self.jit_compile_us, i64),
-        // );
+        #[cfg(feature = "metrics")]
+        datapoint_trace!(
+            "create_executor_trace",
+            ("program_id", self.program_id, String),
+            ("register_syscalls_us", self.register_syscalls_us, i64),
+            ("load_elf_us", self.load_elf_us, i64),
+            ("verify_code_us", self.verify_code_us, i64),
+            ("jit_compile_us", self.jit_compile_us, i64),
+        );
     }
 }
 
@@ -330,6 +334,7 @@ impl ProgramCacheEntry {
         effective_slot: Slot,
         elf_bytes: &[u8],
         account_size: usize,
+        metrics: &mut LoadProgramMetrics,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         Self::new_internal(
             loader_key,
@@ -338,6 +343,7 @@ impl ProgramCacheEntry {
             effective_slot,
             elf_bytes,
             account_size,
+            metrics,
             false, /* reloading */
         )
     }
@@ -357,6 +363,7 @@ impl ProgramCacheEntry {
         effective_slot: Slot,
         elf_bytes: &[u8],
         account_size: usize,
+        metrics: &mut LoadProgramMetrics,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         Self::new_internal(
             loader_key,
@@ -365,6 +372,7 @@ impl ProgramCacheEntry {
             effective_slot,
             elf_bytes,
             account_size,
+            metrics,
             true, /* reloading */
         )
     }
@@ -376,23 +384,37 @@ impl ProgramCacheEntry {
         effective_slot: Slot,
         elf_bytes: &[u8],
         account_size: usize,
+        metrics: &mut LoadProgramMetrics,
         reloading: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
+        #[cfg(feature = "timing")]
+        let load_elf_time = Measure::start("load_elf_time");
         // The following unused_mut exception is needed for architectures that do not
         // support JIT compilation.
         #[allow(unused_mut)]
         let mut executable = Executable::load(elf_bytes, program_runtime_environment.clone())?;
 
-        if !reloading {
-            executable.verify::<RequisiteVerifier>()?;
+        #[cfg(feature = "timing")]
+        {
+            metrics.load_elf_us = load_elf_time.end_as_us();
         }
 
-        #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
-        {
-            let jit_compile_time = Measure::start("jit_compile_time");
-            executable.jit_compile()?;
-            metrics.jit_compile_us = jit_compile_time.end_as_us();
+        if !reloading {
+            #[cfg(feature = "timing")]
+            let verify_code_time = Measure::start("verify_code_time");
+            executable.verify::<RequisiteVerifier>()?;
+            #[cfg(feature = "timing")]
+            {
+                metrics.verify_code_us = verify_code_time.end_as_us();
+            }
         }
+
+        // #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
+        // {
+        //     let jit_compile_time = Measure::start("jit_compile_time");
+        //     executable.jit_compile()?;
+        //     metrics.jit_compile_us = jit_compile_time.end_as_us();
+        // }
 
         Ok(Self {
             deployment_slot,

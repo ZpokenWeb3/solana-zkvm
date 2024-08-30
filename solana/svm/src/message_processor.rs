@@ -14,6 +14,9 @@ use {
     },
 };
 
+#[cfg(feature = "timing")]
+use solana_measure::measure::Measure;
+
 #[derive(Debug, Default, Clone, serde_derive::Deserialize, serde_derive::Serialize)]
 pub struct MessageProcessor {}
 
@@ -36,6 +39,7 @@ impl MessageProcessor {
         message: &SanitizedMessage,
         program_indices: &[Vec<IndexOfAccount>],
         invoke_context: &mut InvokeContext,
+        execute_timings: &mut ExecuteTimings,
         accumulated_consumed_units: &mut u64,
     ) -> Result<(), TransactionError> {
         debug_assert_eq!(program_indices.len(), message.instructions().len());
@@ -103,15 +107,39 @@ impl MessageProcessor {
                         invoke_context.transaction_context.pop()
                     })
             } else {
+                #[cfg(feature = "timing")]
+                let time = Measure::start("execute_instruction");
                 let mut compute_units_consumed = 0;
                 let result = invoke_context.process_instruction(
                     &instruction.data,
                     &instruction_accounts,
                     program_indices,
                     &mut compute_units_consumed,
+                    execute_timings,
                 );
                 *accumulated_consumed_units =
                     accumulated_consumed_units.saturating_add(compute_units_consumed);
+
+                #[cfg(feature = "timing")]{
+                    let time = Some(time.end_as_us());
+                    execute_timings.details.accumulate_program(
+                        program_id,
+                        time,
+                        compute_units_consumed,
+                        result.is_err(),
+                    );
+                    invoke_context.timings = {
+                        execute_timings.details.accumulate(&invoke_context.timings);
+                        ExecuteDetailsTimings::default()
+                    };
+                    saturating_add_assign!(
+                    execute_timings
+                        .execute_accessories
+                        .process_instructions
+                        .total_us,
+                    time
+                );
+                }
                 result
             };
 
@@ -272,6 +300,7 @@ mod tests {
             &message,
             &program_indices,
             &mut invoke_context,
+            &mut ExecuteTimings::default(),
             &mut 0,
         );
         assert!(result.is_ok());
@@ -325,6 +354,7 @@ mod tests {
             &message,
             &program_indices,
             &mut invoke_context,
+            &mut ExecuteTimings::default(),
             &mut 0,
         );
         assert_eq!(
@@ -368,6 +398,7 @@ mod tests {
             &message,
             &program_indices,
             &mut invoke_context,
+            &mut ExecuteTimings::default(),
             &mut 0,
         );
         assert_eq!(
@@ -502,6 +533,7 @@ mod tests {
             &message,
             &program_indices,
             &mut invoke_context,
+            &mut ExecuteTimings::default(),
             &mut 0,
         );
         assert_eq!(
@@ -540,6 +572,7 @@ mod tests {
             &message,
             &program_indices,
             &mut invoke_context,
+            &mut ExecuteTimings::default(),
             &mut 0,
         );
         assert!(result.is_ok());
@@ -575,6 +608,7 @@ mod tests {
             &message,
             &program_indices,
             &mut invoke_context,
+            &mut ExecuteTimings::default(),
             &mut 0,
         );
         assert!(result.is_ok());
@@ -671,6 +705,7 @@ mod tests {
             &message,
             &[vec![1], vec![2]],
             &mut invoke_context,
+            &mut ExecuteTimings::default(),
             &mut 0,
         );
 

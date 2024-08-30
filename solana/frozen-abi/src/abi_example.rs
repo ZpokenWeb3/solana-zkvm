@@ -343,7 +343,7 @@ impl<T: AbiExample> AbiExample for std::sync::Arc<T> {
 // When T is weakly owned by the likes of `std::{sync, rc}::Weak`s, we need to uphold the ownership
 // of T in some way at least during abi digesting... However, there's no easy way. Stashing them
 // into static is confronted with Send/Sync issue. Stashing them into thread_local is confronted
-// with not enough (T + 'static) lifetime bound..  So, just leak the example-programs. This should be
+// with not enough (T + 'static) lifetime bound..  So, just leak the examples. This should be
 // tolerated, considering ::example() should ever be called inside tests, not in production code...
 fn leak_and_inhibit_drop<'a, T>(t: T) -> &'a mut T {
     Box::leak(Box::new(t))

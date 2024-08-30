@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use crate::compute_budget_processor::{self, ComputeBudgetLimits, DEFAULT_HEAP_COST};
 
 #[cfg(all(RUSTC_WITH_SPECIALIZATION, feature = "frozen-abi"))]
@@ -18,7 +19,7 @@ pub const MAX_CALL_DEPTH: usize = 64;
 /// The size of one SBF stack frame.
 pub const STACK_FRAME_SIZE: usize = 4096;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ComputeBudget {
     /// Number of compute units that a transaction or individual instruction is
     /// allowed to consume. Compute units are consumed by program execution,

@@ -12,13 +12,13 @@ use {
     ed25519_dalek::Signer as DalekSigner,
     ed25519_dalek_bip32::Error as Bip32Error,
     hmac::Hmac,
+    rand0_7::{rngs::OsRng, CryptoRng, RngCore},
     std::{
         error,
         io::{Read, Write},
         path::Path,
     },
 };
-use rand_core::{CryptoRng, OsRng, RngCore};
 
 /// A vanilla Ed25519 key pair
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]

@@ -189,7 +189,7 @@ pub mod test {
             signature::{Keypair, Signer},
             transaction::Transaction,
         },
-        rand::Rng,
+        rand0_7::{thread_rng, Rng},
     };
 
     fn test_case(
@@ -348,7 +348,7 @@ pub mod test {
     fn test_ed25519() {
         solana_logger::setup();
 
-        let privkey = ed25519_dalek::Keypair::generate(&mut rand::thread_rng());
+        let privkey = ed25519_dalek::Keypair::generate(&mut thread_rng());
         let message_arr = b"hello";
         let mut instruction = new_ed25519_instruction(&privkey, message_arr);
         let mint_keypair = Keypair::new();
@@ -364,7 +364,7 @@ pub mod test {
         assert!(tx.verify_precompiles(&feature_set).is_ok());
 
         let index = loop {
-            let index = rand::thread_rng().gen_range(0..instruction.data.len());
+            let index = thread_rng().gen_range(0, instruction.data.len());
             // byte 1 is not used, so this would not cause the verify to fail
             if index != 1 {
                 break index;

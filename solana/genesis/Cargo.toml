@@ -1,0 +1,44 @@
+[package]
+name = "solana-genesis"
+description = "Blockchain, Rebuilt for Scale"
+documentation = "https://docs.rs/solana-genesis"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+base64 = { workspace = true }
+bincode = { workspace = true }
+clap = { workspace = true }
+itertools = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+solana-accounts-db = { workspace = true }
+solana-clap-utils = { workspace = true }
+solana-cli-config = { workspace = true }
+solana-entry = { workspace = true }
+solana-ledger = { workspace = true }
+solana-logger = { workspace = true }
+solana-runtime = { workspace = true }
+solana-sdk = { workspace = true }
+solana-stake-program = { workspace = true }
+solana-version = { workspace = true }
+solana-vote-program = { workspace = true }
+tempfile = { workspace = true }
+
+[dev-dependencies]
+solana-runtime = { workspace = true, features = ["dev-context-only-utils"] }
+
+[[bin]]
+name = "solana-genesis"
+path = "src/main.rs"
+
+[lib]
+name = "solana_genesis"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

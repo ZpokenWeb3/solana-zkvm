@@ -1,0 +1,145 @@
+[package]
+name = "solana-core"
+description = "Blockchain, Rebuilt for Scale"
+documentation = "https://docs.rs/solana-core"
+readme = "../README.md"
+version = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+
+[badges]
+codecov = { repository = "solana-labs/solana", branch = "master", service = "github" }
+
+[dependencies]
+ahash = { workspace = true }
+base64 = { workspace = true }
+bincode = { workspace = true }
+bs58 = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true, features = ["default", "serde"] }
+crossbeam-channel = { workspace = true }
+dashmap = { workspace = true, features = ["rayon", "raw-api"] }
+etcd-client = { workspace = true, features = ["tls"] }
+futures = { workspace = true }
+histogram = { workspace = true }
+itertools = { workspace = true }
+lazy_static = { workspace = true }
+log = { workspace = true }
+lru = { workspace = true }
+min-max-heap = { workspace = true }
+num_enum = { workspace = true }
+prio-graph = { workspace = true }
+qualifier_attr = { workspace = true }
+quinn = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+rayon = { workspace = true }
+rolling-file = { workspace = true }
+rustls = { workspace = true }
+serde = { workspace = true }
+serde_bytes = { workspace = true }
+serde_derive = { workspace = true }
+solana-accounts-db = { workspace = true }
+solana-bloom = { workspace = true }
+solana-client = { workspace = true }
+solana-compute-budget = { workspace = true }
+solana-connection-cache = { workspace = true }
+solana-cost-model = { workspace = true }
+solana-entry = { workspace = true }
+solana-frozen-abi = { workspace = true, optional = true }
+solana-frozen-abi-macro = { workspace = true, optional = true }
+solana-geyser-plugin-manager = { workspace = true }
+solana-gossip = { workspace = true }
+solana-ledger = { workspace = true }
+solana-measure = { workspace = true }
+solana-metrics = { workspace = true }
+solana-net-utils = { workspace = true }
+solana-perf = { workspace = true }
+solana-poh = { workspace = true }
+solana-program-runtime = { workspace = true }
+solana-quic-client = { workspace = true }
+solana-rayon-threadlimit = { workspace = true }
+solana-rpc = { workspace = true }
+solana-rpc-client-api = { workspace = true }
+solana-runtime = { workspace = true }
+solana-sdk = { workspace = true }
+solana-send-transaction-service = { workspace = true }
+solana-streamer = { workspace = true }
+solana-svm = { workspace = true }
+solana-tpu-client = { workspace = true }
+solana-transaction-status = { workspace = true }
+solana-turbine = { workspace = true }
+solana-unified-scheduler-pool = { workspace = true }
+solana-version = { workspace = true }
+solana-vote = { workspace = true }
+solana-vote-program = { workspace = true }
+solana-wen-restart = { workspace = true }
+strum = { workspace = true, features = ["derive"] }
+strum_macros = { workspace = true }
+sys-info = { workspace = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+trees = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+fs_extra = { workspace = true }
+serde_json = { workspace = true }
+serial_test = { workspace = true }
+# See order-crates-for-publishing.py for using this unusual `path = "."`
+solana-core = { path = ".", features = ["dev-context-only-utils"] }
+solana-ledger = { workspace = true, features = ["dev-context-only-utils"] }
+solana-logger = { workspace = true }
+solana-poh = { workspace = true, features = ["dev-context-only-utils"] }
+solana-program-runtime = { workspace = true }
+solana-runtime = { workspace = true, features = ["dev-context-only-utils"] }
+solana-sdk = { workspace = true, features = ["dev-context-only-utils"] }
+solana-stake-program = { workspace = true }
+solana-unified-scheduler-pool = { workspace = true, features = [
+    "dev-context-only-utils",
+] }
+static_assertions = { workspace = true }
+systemstat = { workspace = true }
+test-case = { workspace = true }
+
+[target."cfg(unix)".dependencies]
+sysctl = { workspace = true }
+
+[build-dependencies]
+rustc_version = { workspace = true }
+
+[features]
+dev-context-only-utils = []
+frozen-abi = [
+    "dep:solana-frozen-abi",
+    "dep:solana-frozen-abi-macro",
+    "solana-accounts-db/frozen-abi",
+    "solana-bloom/frozen-abi",
+    "solana-compute-budget/frozen-abi",
+    "solana-cost-model/frozen-abi",
+    "solana-gossip/frozen-abi",
+    "solana-ledger/frozen-abi",
+    "solana-perf/frozen-abi",
+    "solana-program-runtime/frozen-abi",
+    "solana-runtime/frozen-abi",
+    "solana-sdk/frozen-abi",
+    "solana-svm/frozen-abi",
+    "solana-vote/frozen-abi",
+    "solana-vote-program/frozen-abi",
+]
+
+[[bench]]
+name = "banking_stage"
+
+[[bench]]
+name = "gen_keys"
+
+[[bench]]
+name = "sigverify_stage"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

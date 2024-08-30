@@ -1075,7 +1075,7 @@ lazy_static! {
 
 /// `FeatureSet` holds the set of currently active/inactive runtime features
 #[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FeatureSet {
     pub active: HashMap<Pubkey, Slot>,
     pub inactive: HashSet<Pubkey>,

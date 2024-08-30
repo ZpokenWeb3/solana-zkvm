@@ -1,0 +1,40 @@
+[package]
+name = "solana-simulator-types"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+solana-program = { path = "../../../../solana/sdk/program", version = "=2.0.3", default-features = false }
+solana-sdk = { path = "../../../../solana/sdk", version = "=2.0.3", features = ["dev-context-only-utils"] }
+solana-svm = { path = "../../../../solana/svm", version = "=2.0.3", default-features = false }
+solana-client = { path = "../../../../solana/client", version = "=2.0.3", optional = true}
+log = "0.4.22"
+thiserror = "1.0.63"
+solana-cli = {path = "../../../../solana/cli", version = "=2.0.3", optional = true}
+bincode = "1.3.3"
+hex = { version = "0.4.3", features = [] }
+strum = { version = "0.24.1", features = [] }
+serde_with = { version = "3.9", features = ["hex"] }
+serde_json = "1.0.117"
+async-trait = "0.1.80"
+base64 = "0.12.3"
+serde = { version = "1.0.203", features = ["derive"] }
+tokio = { version = "1.39.2", optional = true }
+
+
+[features]
+async_enabled = ["solana-client", "solana-cli", "tokio"]
+
+[patch.crates-io.curve25519-dalek]
+git = "https://github.com/anza-xyz/curve25519-dalek.git"
+rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
+
+[patch.crates-io]
+solana-program = { path = "../../../../solana/sdk/program" }
+solana-curve25519 = { path = "../../../../solana/curves/curve25519" }
+solana-sdk = {path = "../../../../solana/sdk"}
+solana-zk-sdk = { path = "../../../../solana/zk-sdk" }
+solana-zk-token-sdk = { path = "../../../../solana/zk-token-sdk" }
+

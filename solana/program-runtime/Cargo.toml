@@ -25,6 +25,8 @@ serde = { workspace = true }
 solana-compute-budget = { workspace = true }
 solana-frozen-abi = { workspace = true, optional = true }
 solana-frozen-abi-macro = { workspace = true, optional = true }
+solana-measure = { workspace = true }
+solana-metrics = { workspace = true, optional = true}
 solana-sdk = { workspace = true }
 solana-type-overrides = { workspace = true }
 solana-vote = { workspace = true }
@@ -55,3 +57,6 @@ frozen-abi = [
     "solana-sdk/frozen-abi",
 ]
 shuttle-test = ["solana-type-overrides/shuttle-test"]
+metrics = ["solana-metrics"]
+timing = []
+

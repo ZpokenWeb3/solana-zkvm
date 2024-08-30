@@ -2,6 +2,7 @@ use {
     super::v0::{LoadedAddresses, MessageAddressTableLookup},
     thiserror::Error,
 };
+use crate::address_lookup_table::error::AddressLookupError;
 
 #[derive(Debug, Error, PartialEq, Eq, Clone)]
 pub enum AddressLoaderError {
@@ -35,6 +36,17 @@ pub trait AddressLoader: Clone {
         self,
         lookups: &[MessageAddressTableLookup],
     ) -> Result<LoadedAddresses, AddressLoaderError>;
+}
+
+impl From<AddressLookupError> for AddressLoaderError {
+    fn from(err: AddressLookupError) -> Self {
+        match err {
+            AddressLookupError::LookupTableAccountNotFound => AddressLoaderError::LookupTableAccountNotFound,
+            AddressLookupError::InvalidAccountOwner => AddressLoaderError::InvalidAccountOwner,
+            AddressLookupError::InvalidAccountData => AddressLoaderError::InvalidAccountData,
+            AddressLookupError::InvalidLookupIndex => AddressLoaderError::InvalidLookupIndex,
+        }
+    }
 }
 
 #[derive(Clone)]
