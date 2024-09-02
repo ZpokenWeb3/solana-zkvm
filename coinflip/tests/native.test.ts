@@ -1,11 +1,25 @@
 import * as borsh from "borsh";
 import assert from "assert";
 import * as web3 from "@solana/web3.js";
+import {Keypair} from "@solana/web3.js";
+import * as fs from "node:fs";
+import * as path from "node:path";
 // Manually initialize variables that are automatically defined in Playground
 const PROGRAM_ID = new web3.PublicKey("6vDY3oP53Gz8WFQ2Up58ViMHAxfwykRn7Wgq1E3BGgod");
 const connection = new web3.Connection("http://localhost:8899", "confirmed");
-const wallet = { keypair: web3.Keypair.generate() };
 
+const loadWalletFromFile = (filePath: string): Keypair => {
+  const secretKeyString = fs.readFileSync(filePath, 'utf8');
+  const secretKeyArray = JSON.parse(secretKeyString) as number[];
+  return Keypair.fromSecretKey(new Uint8Array(secretKeyArray));
+}
+
+const walletFilePath = path.join(process.env.HOME || '', '.config/solana/id.json');
+
+// Load the wallet
+const wallet = {
+  keypair: loadWalletFromFile(walletFilePath)
+};
 
 class GameData {
   is_initialized: boolean;
@@ -62,7 +76,7 @@ describe("Test", () => {
         fromPubkey: wallet.keypair.publicKey,
         newAccountPubkey: pubkey,
         space: DATA_SIZE,
-        lamports: 1 * web3.LAMPORTS_PER_SOL,
+        lamports: web3.LAMPORTS_PER_SOL,
         programId: PROGRAM_ID,
       });
     };
@@ -111,6 +125,10 @@ describe("Test", () => {
 
     console.log(`Game tx hash: ${gameTxHash}`);
 
+    const txDetails = await connection.getParsedTransaction(gameTxHash, { commitment: 'confirmed' });
+    const block = await connection.getBlock(txDetails.slot,{ commitment: 'confirmed' });
+    console.log(`Blockhash: ${block.blockhash}`)
+
     const recipientBalanceAfterTx = await connection.getBalance(testRecipientKP.publicKey);
     const gameAccountBalanceAfterTx = await connection.getBalance(gameAccountKP.publicKey);
 
@@ -128,8 +146,5 @@ describe("Test", () => {
     const expectedGameBalanceLoss = initialGameAccountBalance - winnings;
 
     assert((gameAccountBalanceAfterTx == expectedGameBalanceLoss) || (gameAccountBalanceAfterTx == expectedGameBalanceWinnings))
-
-    
-
   });
 });
