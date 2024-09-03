@@ -2,13 +2,12 @@
 resolver = "2"
 members = ["host", "methods",  "methods/core", "methods/core/types"]
 
-# Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
-opt-level = 3
+opt-level = 2
 
 [profile.release]
 debug = 1
-lto = true
+lto = "thin"
 
 [patch.crates-io.curve25519-dalek]
 git = "https://github.com/anza-xyz/curve25519-dalek.git"
