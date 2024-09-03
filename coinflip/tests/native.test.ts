@@ -4,8 +4,11 @@ import * as web3 from "@solana/web3.js";
 import {Keypair} from "@solana/web3.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
 // Manually initialize variables that are automatically defined in Playground
-const PROGRAM_ID = new web3.PublicKey("6vDY3oP53Gz8WFQ2Up58ViMHAxfwykRn7Wgq1E3BGgod");
 const connection = new web3.Connection("http://localhost:8899", "confirmed");
 
 const loadWalletFromFile = (filePath: string): Keypair => {
@@ -14,7 +17,9 @@ const loadWalletFromFile = (filePath: string): Keypair => {
   return Keypair.fromSecretKey(new Uint8Array(secretKeyArray));
 }
 
-const walletFilePath = path.join(process.env.HOME || '', '.config/solana/id.json');
+const PROGRAM_ID = new web3.PublicKey(process.env.PROGRAM_ID || '');
+
+const walletFilePath = path.join(process.env.WALLET_FILE_PATH || '');
 
 // Load the wallet
 const wallet = {
