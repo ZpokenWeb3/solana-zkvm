@@ -2,8 +2,8 @@
 
 apt install screen
 
-mkdir solana-local-validator && cd solana-local-validator
-
+mkdir solana-local-validator
+cd solana-local-validator
 # Create keypair
 output=$(solana-keygen grind --ignore-case --starts-with QN:1)
 filename=$(echo "$output" | grep "Wrote keypair to" | awk -F'Wrote keypair to ' '{print $2}')
@@ -32,7 +32,7 @@ program_id=$(echo "$output" | grep "Program Id:" | awk '{print $3}')
 echo "ProgramID: $program_id"
 cd ../
 echo "PROGRAM_ID=$program_id" > .env
-echo "WALLET_FILE_PATH=$key_path" >> .env
+echo "WALLET_FILE_PATH='$key_path'" >> .env
 
 # Build tests and receive transaction signature, block hash
 yarn

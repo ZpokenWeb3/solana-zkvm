@@ -29,3 +29,7 @@ solana-curve25519 = { path = "../../solana/curves/curve25519" }
 solana-sdk = {path = "../../solana/sdk"}
 solana-zk-sdk = { path = "../../solana/zk-sdk" }
 solana-zk-token-sdk = { path = "../../solana/zk-token-sdk" }
+
+[features]
+cuda = ["risc0-zkvm/cuda"]
+metal = ["risc0-zkvm/metal"]

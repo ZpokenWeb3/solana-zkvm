@@ -19,6 +19,6 @@ sh -c "$(curl -sSfL https://release.solana.com/v1.18.18/install)"
 export PATH="$USER_HOME/.local/share/solana/install/active_release/bin:$PATH"
 
 # Install NodeJs and yarn
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-apt-get install -y nodejs
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+nvm install 22
 npm install --global yarn
