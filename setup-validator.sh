@@ -1,9 +1,10 @@
 #!/bin/bash
 
-apt install screen
+export PATH=~/.local/share/solana/install/active_release/bin:$PATH
 
 mkdir solana-local-validator
 cd solana-local-validator
+
 # Create keypair
 output=$(solana-keygen grind --ignore-case --starts-with QN:1)
 filename=$(echo "$output" | grep "Wrote keypair to" | awk -F'Wrote keypair to ' '{print $2}')
@@ -34,8 +35,26 @@ cd ../
 echo "PROGRAM_ID=$program_id" > .env
 echo "WALLET_FILE_PATH='$key_path'" >> .env
 
-# Build tests and receive transaction signature, block hash
+# Build tests and input transaction signature, block hash to prover
 yarn
 yarn add rpc-websockets@7.0.0
 yarn add dotenv
 yarn test
+output=$(yarn test)
+block_hash=$(echo "$output" | grep "Blockhash:" | awk -F'Blockhash: ' '{print $2}')
+signatures_file_name=$(echo "$output" | grep "File saved to:" | awk -F'File saved to: ' '{print $2}')
+signatures_full_path="$(pwd)/$signatures_file_name"
+echo "Block hash used: $block_hash"
+cd ../risczero
+
+# Enable GPU acceleration if cuda toolkit is installed
+if command -v nvidia-smi &> /dev/null && command -v nvcc &> /dev/null; then
+    CUDA_FLAG="-F cuda"
+else
+    CUDA_FLAG=""
+fi
+
+RUST_LOG=info cargo run --release --bin host "$CUDA_FLAG" -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+
+# Verifier part
+forge build

@@ -5,3 +5,4 @@ test-ledger
 .env
 yarn.lock
 program/Cargo.lock
+signatures
