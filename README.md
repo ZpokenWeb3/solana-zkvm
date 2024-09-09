@@ -75,7 +75,30 @@ yarn client
 ```
 
 
+## Running the Dockerfile
 
+This section provides instructions on how to build and run the Docker image with GPU acceleration. It includes steps for starting a local validator node, executing transactions, and proving those transactions.
+
+### Prerequisites
+Ensure you have Docker installed on your machine. You can download and install Docker from [Docker's official website](https://docs.docker.com/engine/install/ubuntu/).
+
+To enable GPU acceleration, you need to install the NVIDIA Container Toolkit and configure Docker on your machine. You can follow the setup instructions provided in [the following link](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker).
+
+### Build and runtime
+Use the following command to build your Docker image:
+```bash
+docker build -t solana-cuda-prover .
+```
+Use the following command to run your Docker container with GPU support:
+```bash
+sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp --gpus all -it --rm --name solana-cuda-prover solana-cuda-prover bash
+```
+
+Use the following command to run the script that launches a local validator, makes a transaction, and proves the transaction with GPU acceleration:
+```bash
+chmod +x ./setup-validator.sh
+./setup-validator.sh
+```
 
 ## Directory Structure
 

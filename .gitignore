@@ -18,3 +18,4 @@ log-*/
 .idea/
 /solana.iml
 /.vscode/
+.DS_STORE
