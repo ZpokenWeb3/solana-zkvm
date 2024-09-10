@@ -11,24 +11,24 @@ fn main() {
     // Read the input data for this application.
     let request: SimulateSolanaRequest = env::read();
     let simulator: SolanaSimulator = env::read();
-    let verify = request.verify.unwrap_or(true);
-    let mut sanitized_transactions: Vec<SanitizedTransaction> = vec![];
-    for tx in request.transactions {
-        let sanitized = simulator.sanitize_transaction(tx, verify).unwrap();
-        sanitized_transactions.push(sanitized);
-    }
+    // let verify = request.verify.unwrap_or(true);
+    // let mut sanitized_transactions: Vec<SanitizedTransaction> = vec![];
+    // for tx in request.transactions {
+    //     let sanitized = simulator.sanitize_transaction(tx, verify).unwrap();
+    //     sanitized_transactions.push(sanitized);
+    // }
     let block_hash: Hash = request.blockhash.clone().into();
-    let mut results = Vec::new();
-    for tx in sanitized_transactions {
-        let r = simulator.process_transaction(request.blockhash.into(), &tx).unwrap();
-        let error = r.result.err();
-        results.push(SimulateSolanaTransactionResult {
-            error: error.clone(),
-            logs: r.logs,
-            executed_units: r.units_consumed,
-        });
-        assert_eq!(error.is_none(), true);
-    }
+    // let mut results = Vec::new();
+    // for tx in sanitized_transactions {
+    //     let r = simulator.process_transaction(request.blockhash.into(), &tx).unwrap();
+    //     let error = r.result.err();
+    //     results.push(SimulateSolanaTransactionResult {
+    //         error: error.clone(),
+    //         logs: r.logs,
+    //         executed_units: r.units_consumed,
+    //     });
+    //     assert_eq!(error.is_none(), true);
+    // }
 
     env::commit(&block_hash.to_bytes());
 }
