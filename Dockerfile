@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.5.1-cudnn-runtime-ubuntu22.04
+FROM nvidia/cuda:12.5.1-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     llvm \
     clang \
     ca-certificates \
-    apt-transport-https \
     git \
     screen \
     cuda-toolkit-12-5 \
@@ -20,6 +19,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install Docker
 RUN apt update && apt-get install -y software-properties-common
+RUN apt update && apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
 RUN apt-cache policy docker-ce
@@ -35,19 +35,19 @@ RUN export CUDA_HOME=/usr/local/cuda-12.5 && \
 
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="$HOME/.cargo/bin:${PATH}"
+ENV PATH="/root/.cargo/bin:${PATH}"
 RUN source ~/.bashrc
 RUN rustup update
 
 # Install RiscZero toolchain
 RUN curl -L https://risczero.com/install | bash
 RUN source ~/.bashrc
-ENV PATH="$HOME/.risc0/bin:${PATH}"
+ENV PATH="~/.risc0/bin:${PATH}"
 RUN rzup install
 
 # Install Solana CLI
 RUN sh -c "$(curl -sSfL https://release.solana.com/v1.18.18/install)"
-RUN export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+RUN export PATH="~/.local/share/solana/install/active_release/bin:$PATH"
 RUN source ~/.bashrc
 
 # Install NVM, Node.js, and Yarn
@@ -56,7 +56,7 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | b
     && nvm install 22 \
     && npm install --global yarn
 
-# Install Foundry
+# Install Foundry and copy project files
 WORKDIR /app
 RUN cargo install --git https://github.com/foundry-rs/foundry --profile release --locked forge chisel anvil
 COPY . /app

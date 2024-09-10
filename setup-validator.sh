@@ -84,7 +84,7 @@ fi
 
 if is_docker; then
   cd ../
-  RUST_LOG=info ./host -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+  RUST_LOG=info ./host --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
 else
   cd ../risczero
   RUST_LOG=info cargo run --release --bin host "$CUDA_FLAG" -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
