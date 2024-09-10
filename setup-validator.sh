@@ -2,29 +2,41 @@
 
 export PATH=~/.local/share/solana/install/active_release/bin:$PATH
 
-mkdir solana-local-validator
-cd solana-local-validator
-
-# Create keypair
-output=$(solana-keygen grind --ignore-case --starts-with QN:1)
-filename=$(echo "$output" | grep "Wrote keypair to" | awk -F'Wrote keypair to ' '{print $2}')
-full_path=$(pwd)
-key_path="$full_path/$filename"
-solana config set --url localhost --keypair "$key_path"
-
-# Start local validator in screen
 SESSION_NAME="solana-validator"
-COMMAND="solana-test-validator --limit-ledger-size 100000"
-screen -dmS "$SESSION_NAME" bash -c "$COMMAND; exec bash"
-echo "Started a new screen session '$SESSION_NAME' running the command: $COMMAND"
 
-echo "Wait to initalize solana-validator..."
-sleep 5
-# Airdrop account
-solana airdrop 100
+if ! screen -list | grep -q "\.${SESSION_NAME}"; then
+  mkdir solana-local-validator
+  cd solana-local-validator
+
+  # Create keypair
+  output=$(solana-keygen grind --ignore-case --starts-with QN:1)
+  filename=$(echo "$output" | grep "Wrote keypair to" | awk -F'Wrote keypair to ' '{print $2}')
+  full_path=$(pwd)
+  key_path="$full_path/$filename"
+  solana config set --url localhost --keypair "$key_path"
+
+  # Start local validator in screen
+  COMMAND="solana-test-validator --limit-ledger-size 100000"
+  screen -dmS "$SESSION_NAME" bash -c "$COMMAND; exec bash"
+  echo "Started a new screen session '$SESSION_NAME' running the command: $COMMAND"
+
+  echo "Wait to initalize solana-validator..."
+  sleep 5
+  # Airdrop account
+  solana airdrop 100
+
+  DEFAULT_KEYPAIR_PATH="$HOME/.config/solana/id.json"
+  if [ ! -f "$DEFAULT_KEYPAIR_PATH" ]; then
+    solana-keygen new --no-bip39-passphrase -o "$DEFAULT_KEYPAIR_PATH"
+  fi
+  cd ../coinflip/program
+else
+  key_path=$(solana config get | grep "Keypair Path:" | awk -F ': ' '{print $2}' | sed 's/^ *//;s/ *$//')
+  cd coinflip/program
+fi
 
 # Build Solana program
-cd ../coinflip/program || exit
+echo "Build Solana program..."
 cargo build-sbf
 
 # Write deployed PROGRAM_ID and correct path to wallet
@@ -45,7 +57,23 @@ block_hash=$(echo "$output" | grep "Blockhash:" | awk -F'Blockhash: ' '{print $2
 signatures_file_name=$(echo "$output" | grep "File saved to:" | awk -F'File saved to: ' '{print $2}')
 signatures_full_path="$(pwd)/$signatures_file_name"
 echo "Block hash used: $block_hash"
-cd ../risczero
+
+# Check if running in Docker
+is_docker() {
+  if [ -f /.dockerenv ] || grep -q 'docker' /proc/1/cgroup; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+if is_docker; then
+  USE_DOCKER="true"
+else
+  USE_DOCKER="false"
+fi
+
+echo "USE_DOCKER=${USE_DOCKER}"
 
 # Enable GPU acceleration if cuda toolkit is installed
 if command -v nvidia-smi &> /dev/null && command -v nvcc &> /dev/null; then
@@ -54,7 +82,13 @@ else
     CUDA_FLAG=""
 fi
 
-RUST_LOG=info cargo run --release --bin host "$CUDA_FLAG" -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+if is_docker; then
+  cd ../
+  RUST_LOG=info ./host -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+else
+  cd ../risczero
+  RUST_LOG=info cargo run --release --bin host "$CUDA_FLAG" -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+fi
 
 # Verifier part
 forge build

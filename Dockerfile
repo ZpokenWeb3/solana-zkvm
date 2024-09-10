@@ -39,17 +39,11 @@ ENV PATH="$HOME/.cargo/bin:${PATH}"
 RUN source ~/.bashrc
 RUN rustup update
 
-# Install Foundry
-RUN curl -L https://foundry.paradigm.xyz | bash
-RUN source ~/.bashrc
-ENV PATH="$HOME/.foundry/bin:${PATH}"
-RUN foundryup
-
 # Install RiscZero toolchain
 RUN curl -L https://risczero.com/install | bash
 RUN source ~/.bashrc
 ENV PATH="$HOME/.risc0/bin:${PATH}"
-RUN rzup
+RUN rzup install
 
 # Install Solana CLI
 RUN sh -c "$(curl -sSfL https://release.solana.com/v1.18.18/install)"
@@ -62,8 +56,20 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | b
     && nvm install 22 \
     && npm install --global yarn
 
+# Install Foundry
 WORKDIR /app
-
+RUN cargo install --git https://github.com/foundry-rs/foundry --profile release --locked forge chisel anvil
 COPY . /app
+
+# Build prover binary with GPU feature
+WORKDIR /app/risczero
+RUN cargo build --release -F cuda
+
+# Remove unused files
+WORKDIR /app
+RUN cp -r risczero/* ./
+RUN rm -r host/ rbpf/ ed25519-dalek/ Cargo.toml Cargo.lock solana/ risczero/
+RUN cp target/release/host .
+RUN rm -r target/
 
 CMD ["/bin/bash"]
