@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 methods = { path = "../methods" }
-risc0-zkvm = { version = "1.1.0", features = ["prove", "docker"] }
+risc0-zkvm = { version = "1.1.0-rc.3", features = ["prove", "docker"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 svm-core = { path = "../methods/core", features = ["async_enabled"] }
 solana-sdk = { path = "../../solana/sdk", version = "=2.0.3" }
