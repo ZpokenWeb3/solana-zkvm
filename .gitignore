@@ -19,3 +19,4 @@ log-*/
 /solana.iml
 /.vscode/
 .DS_STORE
+solana-local-validator

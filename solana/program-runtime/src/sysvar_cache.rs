@@ -82,97 +82,46 @@ impl SysvarCache {
         let sysvar_id = T::id();
         match sysvar_id {
             sysvar::clock::ID => {
-                println!("Matched sysvar::clock::ID");
                 self.clock = Some(data);
             }
             sysvar::epoch_rewards::ID => {
-                println!("Matched sysvar::epoch_rewards::ID");
                 self.epoch_rewards = Some(data);
             }
             sysvar::epoch_schedule::ID => {
-                println!("Matched sysvar::epoch_schedule::ID");
                 self.epoch_schedule = Some(data);
             }
             FEES_ID => {
-                println!("Matched FEES_ID");
                 let fees: Fees =
                     bincode::deserialize(&data).expect("Failed to deserialize Fees sysvar.");
                 self.fees = Some(fees);
             }
             sysvar::last_restart_slot::ID => {
-                println!("Matched sysvar::last_restart_slot::ID");
                 self.last_restart_slot = Some(data);
             }
             RECENT_BLOCKHASHES_ID => {
-                println!("Matched RECENT_BLOCKHASHES_ID");
                 let recent_blockhashes: RecentBlockhashes = bincode::deserialize(&data)
                     .expect("Failed to deserialize RecentBlockhashes sysvar.");
                 self.recent_blockhashes = Some(recent_blockhashes);
             }
             sysvar::rent::ID => {
-                println!("Matched sysvar::rent::ID");
                 self.rent = Some(data);
             }
             sysvar::slot_hashes::ID => {
-                println!("Matched sysvar::slot_hashes::ID");
                 let slot_hashes: SlotHashes =
                     bincode::deserialize(&data).expect("Failed to deserialize SlotHashes sysvar.");
                 self.slot_hashes = Some(data);
                 self.slot_hashes_obj = Some(Arc::new(slot_hashes));
             }
             sysvar::stake_history::ID => {
-                println!("Matched sysvar::stake_history::ID");
                 let stake_history: StakeHistory = bincode::deserialize(&data)
                     .expect("Failed to deserialize StakeHistory sysvar.");
                 self.stake_history = Some(data);
                 self.stake_history_obj = Some(Arc::new(stake_history));
             }
             _ => {
-                println!("Unrecognized Sysvar ID: {sysvar_id:?}");
                 panic!("Unrecognized Sysvar ID: {sysvar_id}");
             }
         }
-        // match sysvar_id {
-        //     sysvar::clock::ID => {
-        //         self.clock = Some(data);
-        //     }
-        //     sysvar::epoch_rewards::ID => {
-        //         self.epoch_rewards = Some(data);
-        //     }
-        //     sysvar::epoch_schedule::ID => {
-        //         self.epoch_schedule = Some(data);
-        //     }
-        //     FEES_ID => {
-        //         let fees: Fees =
-        //             bincode::deserialize(&data).expect("Failed to deserialize Fees sysvar.");
-        //         self.fees = Some(fees);
-        //     }
-        //     sysvar::last_restart_slot::ID => {
-        //         self.last_restart_slot = Some(data);
-        //     }
-        //     RECENT_BLOCKHASHES_ID => {
-        //         let recent_blockhashes: RecentBlockhashes = bincode::deserialize(&data)
-        //             .expect("Failed to deserialize RecentBlockhashes sysvar.");
-        //         self.recent_blockhashes = Some(recent_blockhashes);
-        //     }
-        //     sysvar::rent::ID => {
-        //         println!("MATCHED ID");
-        //         self.rent = Some(data);
-        //     }
-        //     sysvar::slot_hashes::ID => {
-        //         let slot_hashes: SlotHashes =
-        //             bincode::deserialize(&data).expect("Failed to deserialize SlotHashes sysvar.");
-        //         self.slot_hashes = Some(data);
-        //         self.slot_hashes_obj = Some(Arc::new(slot_hashes));
-        //     }
-        //     sysvar::stake_history::ID => {
-        //         let stake_history: StakeHistory = bincode::deserialize(&data)
-        //             .expect("Failed to deserialize StakeHistory sysvar.");
-        //         self.stake_history = Some(data);
-        //         self.stake_history_obj = Some(Arc::new(stake_history));
-        //     }
-        //     _ => panic!("Unrecognized Sysvar ID: {sysvar_id}"),
-        // }
     }
 
     // most if not all of the obj getter functions can be removed once builtins transition to bpf

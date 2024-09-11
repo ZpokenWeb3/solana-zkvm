@@ -15,7 +15,7 @@ use solana_simulator_types::result::SimulateSolanaRequest;
 use std::io::Write;
 use std::str::FromStr;
 use svm_core::rpc::Rpc;
-use svm_core::{rpc, simulate_solana};
+use svm_core::{HostInput, rpc, simulate_solana};
 
 #[tokio::main]
 async fn main() {
@@ -114,11 +114,15 @@ async fn main() {
         .await
         .unwrap();
 
+    let input = HostInput{
+        simulator: solana_simulator,
+        request,
+    };
+
+    let input_slice = bincode::serialize(&input).unwrap();
+
     let env = ExecutorEnv::builder()
-        .write(&request)
-        .unwrap()
-        .write(&solana_simulator)
-        .unwrap()
+        .write_slice(&input_slice)
         .build()
         .unwrap();
 
@@ -140,7 +144,5 @@ async fn main() {
     );
     println!("Journal: {:?}", hex::encode(journal));
 
-    // The receipt was verified at the end of proving, but the below code is an
-    // example of how someone else could verify this receipt.
     receipt.verify(CUSTOM_METHOD_ID).unwrap();
 }
