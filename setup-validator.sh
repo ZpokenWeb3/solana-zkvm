@@ -48,10 +48,13 @@ echo "PROGRAM_ID=$program_id" > .env
 echo "WALLET_FILE_PATH='$key_path'" >> .env
 
 # Build tests and input transaction signature, block hash to prover
-yarn
+if ! output=$(yarn 2>&1); then
+  echo "Error: Failed to run 'yarn'. Exiting."
+  echo "$output"
+  exit 1
+fi
 yarn add rpc-websockets@7.0.0
 yarn add dotenv
-yarn test
 output=$(yarn test)
 block_hash=$(echo "$output" | grep "Blockhash:" | awk -F'Blockhash: ' '{print $2}')
 signatures_file_name=$(echo "$output" | grep "File saved to:" | awk -F'File saved to: ' '{print $2}')
@@ -84,10 +87,14 @@ fi
 
 if is_docker; then
   cd ../
-  RUST_LOG=info ./host -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+  RUST_LOG=info ./host --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
 else
   cd ../risczero
-  RUST_LOG=info cargo run --release --bin host "$CUDA_FLAG" -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+  if [ -n "$CUDA_FLAG" ]; then
+    RUST_LOG=info cargo run --release --bin host "$CUDA_FLAG" -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+  else
+    RUST_LOG=info cargo run --release --bin host -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
+  fi
 fi
 
 # Verifier part

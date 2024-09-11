@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 methods = { path = "../methods" }
-risc0-zkvm = { version = "1.0.3", features = ["prove", "docker"] }
+risc0-zkvm = { version = "1.1.0-rc.3", features = ["prove", "docker"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 svm-core = { path = "../methods/core", features = ["async_enabled"] }
 solana-sdk = { path = "../../solana/sdk", version = "=2.0.3" }
@@ -18,10 +18,8 @@ tokio = { version = "1", features = ["full"] }
 solana-simulator-types = {path = "../methods/core/types", features = ["async_enabled"]}
 clap = "2.34.0"
 log = "0.4.21"
-risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.0.0" }
-alloy-primitives = { version = "0.6", default-features = false, features = ["rlp", "serde", "std"] }
-alloy-sol-types = { version = "0.6" }
 futures = "0.3.30"
+url = "2.5.2"
 
 
 [patch.crates-io]
@@ -33,4 +31,4 @@ solana-zk-token-sdk = { path = "../../solana/zk-token-sdk" }
 
 [features]
 cuda = ["risc0-zkvm/cuda"]
-metal = ["risc0-zkvm/metal"]
+#metal = ["risc0-zkvm/metal"]
