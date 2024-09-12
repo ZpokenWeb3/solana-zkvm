@@ -16,11 +16,11 @@ function getRemappings() {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.21",
+        version: "0.8.20",
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 200,
+                runs: 1,
             },
         },
     },

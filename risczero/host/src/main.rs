@@ -189,7 +189,7 @@ async fn main() {
         create_dir_all(dir).unwrap();
     }
 
-    let file_path = format!("../{}/{}_proof.json", dir, block_hash.to_string());
+    let file_path = format!("{}/{}_proof.json", dir, block_hash.to_string());
 
     let json_string = serde_json::to_string_pretty(&output).unwrap();
     let mut file = File::create(file_path.clone()).unwrap();
@@ -205,6 +205,6 @@ async fn main() {
 
     receipt.verify(CUSTOM_METHOD_ID).unwrap();
 
-    update_or_create_env(&file_path, ENV_PATH).unwrap();
+    update_or_create_env(&format!("../{}", file_path), ENV_PATH).unwrap();
 
 }
