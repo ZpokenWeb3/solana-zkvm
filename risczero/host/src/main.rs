@@ -1,6 +1,7 @@
 mod utils;
 
-
+use std::fs::{create_dir_all, File, OpenOptions};
+use std::{fs, io};
 use crate::utils::{encode_seal, parse_transactions_info, TEST_BLOCK_HASH};
 use clap::{App, Arg};
 use futures::future;
@@ -13,9 +14,47 @@ use solana_sdk::hash::Hash;
 use solana_sdk::transaction::VersionedTransaction;
 use solana_simulator_types::result::SimulateSolanaRequest;
 use std::io::Write;
+use std::path::Path;
 use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 use svm_core::rpc::Rpc;
 use svm_core::{HostInput, rpc, simulate_solana};
+
+
+const ENV_PATH: &str = "contracts/.env";
+
+#[derive(Serialize)]
+pub struct Groth16Output {
+    pub(crate) journal: String,
+    pub(crate) seal: String,
+}
+
+fn update_or_create_env(proof_path: &str, env_path: &str) -> io::Result<()> {
+    if !Path::new(env_path).exists() {
+        OpenOptions::new().create(true).write(true).open(env_path)?;
+    }
+
+    let file_content = fs::read_to_string(env_path)?;
+    let mut lines: Vec<String> = file_content.lines().map(|line| line.to_string()).collect();
+    let mut image_id_found = false;
+
+    for line in lines.iter_mut() {
+        if line.starts_with("LATEST_PROOF_PATH=") {
+            *line = format!("LATEST_PROOF_PATH={}", proof_path);
+            image_id_found = true;
+            break;
+        }
+    }
+
+    if !image_id_found {
+        lines.push(format!("LATEST_PROOF_PATH={}", proof_path));
+    }
+
+    let mut file = OpenOptions::new().write(true).truncate(true).open(env_path)?;
+    writeln!(file, "{}", lines.join("\n"))?;
+
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() {
@@ -68,10 +107,10 @@ async fn main() {
                 .help("Path to the Transactions file"),
         )
         .arg(
-        Arg::with_name("block_hash")
-            .long("block_hash")
-            .takes_value(true)
-            .help("Block hash"),
+            Arg::with_name("block_hash")
+                .long("block_hash")
+                .takes_value(true)
+                .help("Block hash"),
         )
         .get_matches();
     let config = &rpc::config::create(&options).unwrap();
@@ -97,7 +136,7 @@ async fn main() {
     let block_hash = options.value_of("block_hash")
         .map_or_else(
             || Hash::from_str(TEST_BLOCK_HASH).unwrap(),
-            |s| Hash::from_str(s).unwrap()
+            |s| Hash::from_str(s).unwrap(),
         );
 
     let request = SimulateSolanaRequest {
@@ -114,7 +153,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let input = HostInput{
+    let input = HostInput {
         simulator: solana_simulator,
         request,
     };
@@ -137,12 +176,35 @@ async fn main() {
         .receipt;
 
     let journal = receipt.journal.bytes.clone();
+    let seal_hex_string = format!("0x{}", hex::encode(encode_seal(&receipt).unwrap()));
+    let journal_hex_string = format!("0x{}", hex::encode(journal));
+
+    let output = Groth16Output{
+        journal: journal_hex_string,
+        seal: seal_hex_string,
+    };
+
+    let dir = "proofs";
+    if !std::path::Path::new(dir).exists() {
+        create_dir_all(dir).unwrap();
+    }
+
+    let file_path = format!("../{}/{}_proof.json", dir, block_hash.to_string());
+
+    let json_string = serde_json::to_string_pretty(&output).unwrap();
+    let mut file = File::create(file_path.clone()).unwrap();
+    file.write_all(json_string.as_bytes()).unwrap();
+
+    println!("Output saved to: {:?}", file_path.clone());
 
     println!(
         "Encoded seal: {:?}",
-        hex::encode(encode_seal(&receipt).unwrap())
+        output.seal
     );
-    println!("Journal: {:?}", hex::encode(journal));
+    println!("Journal: {:?}", output.journal);
 
     receipt.verify(CUSTOM_METHOD_ID).unwrap();
+
+    update_or_create_env(&file_path, ENV_PATH).unwrap();
+
 }

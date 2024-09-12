@@ -140,7 +140,7 @@ contract RiscZeroGroth16Verifier is IRiscZeroVerifier, Groth16Verifier {
     }
 
     /// @inheritdoc IRiscZeroVerifier
-    function verify(bytes calldata seal, bytes32 imageId, bytes32 journalDigest) external view {
+    function verify(bytes calldata seal, bytes32 imageId, bytes32 journalDigest) public {
         _verifyIntegrity(seal, ReceiptClaimLib.ok(imageId, journalDigest).digest());
     }
 

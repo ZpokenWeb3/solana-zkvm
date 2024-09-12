@@ -78,7 +78,7 @@ contract RiscZeroGroth16VerifierTest is Test {
         verifier.verifyIntegrity(TEST_RECEIPT);
     }
 
-    function testVerifyKnownGoodImageIdAndJournal() external view {
+    function testVerifyKnownGoodImageIdAndJournal() public {
         verifier.verify(TEST_RECEIPT.seal, TestReceipt.IMAGE_ID, sha256(TestReceipt.JOURNAL));
     }
 
