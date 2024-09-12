@@ -16,11 +16,11 @@
 
 pragma solidity ^0.8.20;
 
-import {RiscZeroCheats} from "risc0/test/RiscZeroCheats.sol";
+import {RiscZeroCheats} from "../src/test/RiscZeroCheats.sol";
 import {console2} from "forge-std/console2.sol";
 import {Test} from "forge-std/Test.sol";
-import {IRiscZeroVerifier} from "risc0/IRiscZeroVerifier.sol";
-import {SvmVerifier} from "../contracts/SvmVerifier.sol";
+import {IRiscZeroVerifier} from "../src/IRiscZeroVerifier.sol";
+import {SvmVerifier} from "../src/SvmVerifier.sol";
 import {Elf} from "./Elf.sol"; // auto-generated contract after running `cargo build`.
 
 contract SvmVerifierTest is RiscZeroCheats, Test {
