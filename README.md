@@ -158,11 +158,10 @@ npx hardhat run --network neonlabs scripts/verification.ts
 
 The project contains a zkVM folder, also known as risczero, and a coinflip folder with a Solana program and TypeScript tests.
 ```text
-solana-zkvm <-- [Verifier contract, deploy and verify scripts]
-├── contracts     
+solana-zkvm
+├── contracts                           <-- [Verifier contract, deploy and verify scripts]   
 ├── risczero
 │   ├── Cargo.toml
-│   ├── contracts                       <-- [Verifier contract and generated program digest]
 │   ├── host
 │   │   ├── Cargo.toml
 │   │   └── src
