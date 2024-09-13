@@ -94,17 +94,72 @@ Use the following command to run your Docker container with GPU support:
 sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp --gpus all -it --rm --name solana-cuda-prover solana-cuda-prover bash
 ```
 
-Use the following command to run the script that launches a local validator, makes a transaction, and proves the transaction with GPU acceleration:
+Use the following commands to run the script that launches a local validator, makes a transaction, and proves the transaction with GPU acceleration:
 ```bash
 chmod +x ./setup-validator.sh
 ./setup-validator.sh
 ```
 
+Add your private key to the `.env` file located in the `contracts` folder.
+Use the following commands to run the script that executes a transaction on Neon MainNet or DevNet:
+```bash
+chmod +x ./verify.sh
+./verify.sh DEVNET
+```
+Pass the network parameter as either `MAINNET` or `DEVNET` to the script.
+
+## Deploy Verifier and verification in Neon
+### Environment Setup
+To configure your environment to use Hardhat, add the following variables to your `.env` file:
+```text
+# Devnet Configuration
+RPC_URL_DEVNET=https://devnet.neonevm.org
+CHAIN_ID_DEVNET=245022926
+
+# Mainnet Configuration
+RPC_URL_MAINNET=https://neon-proxy-mainnet.solana.p2p.org
+CHAIN_ID_MAINNET=245022934
+
+# Verifier URL for Blockscout
+VERIFIER_URL_BLOCKSCOUT=https://neon-devnet.blockscout.com/api
+
+# Verifier Addresses
+VERIFIER_ADDRESS=
+PRIVATE_KEY=""
+```
+MainNet address: `0xF9dB5cD92fbE2A32D3491f10241C2008Df9ba2Cb`
+
+DevNet address: `0x8406d7D31ffC9bAF8BA7D2fd4965E4EC7Bd93a4d`
+
+After building the Rust project, the ImageID used in the verification process is saved in the `.env` file.
+
+Source your `.env` file:
+```bash
+source .env
+```
+
+### Deployment and Verification Commands
+To build the Hardhat project, use the following commands:
+```bash
+cd contracts
+yarn
+```
+To deploy a new contract on Neon EVM, use the following command:
+```bash
+npx hardhat run --network neonlabs scripts/deployVerifier.ts
+```
+Use `neonlabs` for DevNet and `neonmainnet` for MainNet.
+
+To create a verification transaction, run the following command:
+```bash
+npx hardhat run --network neonlabs scripts/verification.ts
+```
 ## Directory Structure
 
 The project contains a zkVM folder, also known as risczero, and a coinflip folder with a Solana program and TypeScript tests.
 ```text
-solana-zkvm
+solana-zkvm <-- [Verifier contract, deploy and verify scripts]
+├── contracts     
 ├── risczero
 │   ├── Cargo.toml
 │   ├── contracts                       <-- [Verifier contract and generated program digest]
