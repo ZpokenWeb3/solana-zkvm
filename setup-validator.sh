@@ -96,6 +96,3 @@ else
     RUST_LOG=info cargo run --release --bin host -- --json_rpc_url http://localhost:8899 --block_hash "$block_hash" --transactions_file "$signatures_full_path"
   fi
 fi
-
-# Verifier part
-forge build
