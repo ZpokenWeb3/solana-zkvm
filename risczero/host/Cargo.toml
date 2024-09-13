@@ -31,4 +31,3 @@ solana-zk-token-sdk = { path = "../../solana/zk-token-sdk" }
 
 [features]
 cuda = ["risc0-zkvm/cuda"]
-#metal = ["risc0-zkvm/metal"]
