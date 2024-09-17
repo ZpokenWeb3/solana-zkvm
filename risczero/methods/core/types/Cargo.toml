@@ -27,14 +27,14 @@ tokio = { version = "1.39.2", optional = true }
 [features]
 async_enabled = ["solana-client", "solana-cli", "tokio"]
 
-[patch.crates-io.curve25519-dalek]
-git = "https://github.com/anza-xyz/curve25519-dalek.git"
-rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
-
 [patch.crates-io]
 solana-program = { path = "../../../../solana/sdk/program" }
 solana-curve25519 = { path = "../../../../solana/curves/curve25519" }
 solana-sdk = {path = "../../../../solana/sdk"}
 solana-zk-sdk = { path = "../../../../solana/zk-sdk" }
 solana-zk-token-sdk = { path = "../../../../solana/zk-token-sdk" }
+sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }
+crypto-bigint = { git = "https://github.com/risc0/RustCrypto-crypto-bigint", tag = "v0.5.5-risczero.0" }
+curve25519-dalek = { git = "https://github.com/risc0/curve25519-dalek", tag = "curve25519-4.1.2-risczero.0" }
+ed25519-dalek = { git = "https://github.com/risc0/curve25519-dalek", tag = "curve25519-4.1.2-risczero.0" }
 
