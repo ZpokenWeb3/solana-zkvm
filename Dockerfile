@@ -68,7 +68,7 @@ RUN cargo build --release -F cuda
 # Remove unused files
 WORKDIR /app
 RUN cp -r risczero/* ./
-RUN rm -r host/ rbpf/ ed25519-dalek/ Cargo.toml Cargo.lock solana/ risczero/
+RUN rm -r host/ Cargo.toml Cargo.lock solana/ risczero/
 RUN cp target/release/host .
 RUN rm -r target/
 

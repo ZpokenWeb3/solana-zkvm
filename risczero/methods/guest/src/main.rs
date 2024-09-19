@@ -17,11 +17,12 @@ fn main() {
         let sanitized = input.simulator.sanitize_transaction(tx, verify).unwrap();
         sanitized_transactions.push(sanitized);
     }
-    let block_hash: Hash = input.request.blockhash.clone().into();
+    let mut post_accounts = Vec::new();
     for tx in sanitized_transactions {
         let r = input.simulator.process_transaction(input.request.blockhash.into(), &tx).unwrap();
         let error = r.result.err();
         assert_eq!(error.is_none(), true);
+        post_accounts.push(r.post_simulation_accounts);
     }
-    env::commit(&block_hash.to_bytes());
+    env::commit(&post_accounts);
 }
