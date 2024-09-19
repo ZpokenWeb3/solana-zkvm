@@ -188,3 +188,14 @@ solana-zkvm
 ## Contributing
 Any contributions you make are greatly appreciated.
 If you have a suggestion that could improve this project, please follow the instructions described  in the [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Acknowledgements
+This project builds on the contributions of numerous organizations that have supported open-source software. These organizations embody the principle that zero-knowledge cryptography represents the future and demonstrate that by collaborating, we can improve the Solana ecosystem:
+- [Solana labs](https://solanalabs.com/), who developed of eBPF virtual machine. Their innovation in advancing BPF technology, originally designed as a kernel-level tool, has significantly contributed to its evolution into eBPF, an extended and more powerful version that now supports user applications within the Solana ecosystem.
+- [Risc Zero](https://risczero.com/), who developed and maintain the `riscv32im-risc0-zkvm-elf` Rust toolchain. Their work on ZKVM provides the capability to prove the correct execution of arbitrary Rust code, advancing the use of zero-knowledge proofs in secure computation.
+- [Neon EVM](https://neonevm.org/), who enhance the Solana ecosystem by enabling the integration of the Ethereum Virtual Machine (EVM). Neon EVM empowers developers to build and deploy decentralized applications (dApps) from EVM-compatible chains to Solana, all while using their existing codebase. Their contribution has greatly expanded the capabilities of the Solana ecosystem, facilitating cross-chain development. 
+
+## License
+This project is licensed under the MIT License.
+
+You can view the full license text in the [LICENSE](LICENSE) file.
